@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>⭐ Little Star Sales (Pro Offline)</title>
+  <title>⭐ Little Star Sales (Cloud Edition)</title>
   
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -22,7 +22,10 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback, useRef } = React;
 
-    const STORAGE_KEY = "littlestar-sales-offline";
+    const STORAGE_KEY = "littlestar-sales-cloud";
+    
+    // 🔴 YOUR GOOGLE APPS SCRIPT URL 🔴
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuOK5b0feTlxTcGb5k2zH50p0CCBXbqHJkDqEErfF9NZiPNfAHmxqYUgG9CssFqCJSLw/exec";
     
     // --- CONSTANTS & DATA ---
     const LOGO_BASE64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAFPCAYAAACifBDfAAAACXBIWXMAAAsTAAALEwEAmpwYAAA57mlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMwNjcgNzkuMTU3NzQ3LCAyMDE1LzAzLzMwLTIzOjQwOjQyICAgICAgICAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIKICAgICAgICAgICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj4KICAgICAgICAgPHhtcDpDcmVhdG9yVG9vbD5BZG9iZSBQaG90b3Nob3AgQ0MgMjAxNSAoV2luZG93cyk8L3htcDpDcmVhdG9yVG9vbD4KICAgICAgICAgPHhtcDpDcmVhdGVEYXRlPjIwMjEtMDItMDhUMTA6MTQ6MzUrMDU6MDA8L3htcDpDcmVhdGVEYXRlPgogICAgICAgICA8eG1wOk1vZGlmeURhdGU+MjAyMS0wMi0yMFQxMTo1NzozMSswNTowMDwveG1wOk1vZGlmeURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjEtMDItMjBUMTE6NTc6MzErMDU6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5jZUlEPnhtcC5paWQ6NWMyYjkyZTMtZjNhMi1jNzRkLTlmM2UtYmZiNjM0MTY5MzQ4PC94bXBNTTpJbnN0YW5jZUlEPgogICAgICAgICA8eG1wTU06RG9jdW1lbnRJRD5hZG9iZTpkb2NpZDpwaG90b3Nob3A6ZTcyNjU2MzUtNzM0OC0xMWViLTllYjItYzk1OGE1ZjY3YzM2PC94bXBNTTpEb2N1bWVudElEPgogICAgICAgICA8eG1wTU06T3JpZ2luYWxEb2N1bWVudElEPnhtcC5kaWQ6ZWViYWRkZTEtNjdhNi02YTQ3LWFhY2UtY2FlMTk0NTBhMDYyPC94bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpIaXN0b3J5PgogICAgICAgICAgICA8cmRmOlNlcT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+Y3JlYXRlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOmVlYmFkZGUxLTY3YTYtNmE0Ny1hYWNlLWNhZTE5NDUwYTA2Mjwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMS0wMi0wOFQxMDoxNDozNSswNTowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKFdpbmRvd3cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOlxpPgogICAgICAgICAgICAgICA8cmRmOlxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOjVjMmI5MmUzLWYzYTItYzc0ZC05ZjNlLWJmYjYzNDE2OTM0ODwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMS0wMi0yMFQxMTo1NzozMSswNTowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjY1NTM1PC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWERpbWVuc2lvbj4yNTY8L2V4aWY6UG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';
@@ -66,6 +69,16 @@
     function getMonthPrefix(dateStr){
       const d = dateStr ? new Date(dateStr+'T00:00:00') : new Date();
       return MONTH_NAMES[d.getMonth()];
+    }
+
+    function formatTS(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yy = String(d.getFullYear()).slice(2);
+      let h = d.getHours(); const ampm = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+      return `${dd}/${mm}/${yy} ${h}:${String(d.getMinutes()).padStart(2, "0")} ${ampm}`;
     }
 
     // Invoice Printing Base Code
@@ -177,6 +190,11 @@
       const [salesLog, setSalesLog] = useState([]);
       const [prices, setPrices] = useState({});
       
+      // Sync State
+      const [isSyncing, setIsSyncing] = useState(false);
+      const [needsCloudSync, setNeedsCloudSync] = useState(false);
+      const [lastSync, setLastSync] = useState(null);
+      
       // New Sale State
       const [saleDate, setSaleDate] = useState(todayStr());
       const [buyerIdx, setBuyerIdx] = useState("");
@@ -190,9 +208,70 @@
         }
       }, []);
 
-      // Load Data
+      const showToast = useCallback((msg, type = "success") => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 2500);
+      }, []);
+
+      // --- CLOUD LOGIC ---
+      const saveToLocal = (log, pr) => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ salesLog: log, prices: pr }));
+        setNeedsCloudSync(true); 
+      };
+
+      const pullFromCloud = useCallback(async () => {
+        setIsSyncing(true);
+        try {
+          const res = await fetch(SCRIPT_URL);
+          const text = await res.text();
+          const d = text ? JSON.parse(text) : {};
+          
+          if (d.salesLog) {
+            setSalesLog(d.salesLog); 
+            if (d.prices) setPrices(d.prices);
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+            setLastSync(new Date());
+            setNeedsCloudSync(false);
+            setIsSyncing(false);
+            return true;
+          }
+        } catch (e) {
+          console.error("Cloud pull error:", e);
+        }
+        setIsSyncing(false);
+        return false;
+      }, []);
+
+      const pushToCloud = async () => {
+        setIsSyncing(true);
+        const payload = { salesLog, prices, updatedAt: Date.now() };
+        try {
+          // Send plain text to avoid CORS preflight errors with Google Script
+          const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          
+          if (res.ok) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            setLastSync(new Date());
+            setNeedsCloudSync(false);
+            showToast("Saved to Google Sheets securely!");
+          } else {
+            showToast("Cloud save failed. Try again.", "error");
+          }
+        } catch (e) {
+          showToast("Network error. Check connection.", "error");
+        }
+        setIsSyncing(false);
+      };
+
+      // Load Data on App Start
       useEffect(() => {
         if (!isAuthenticated) return;
+        
         const localVal = localStorage.getItem(STORAGE_KEY);
         if (localVal) {
           try {
@@ -200,23 +279,18 @@
             if (d.salesLog) setSalesLog(d.salesLog);
             if (d.prices) setPrices(d.prices);
           } catch(e){}
+        } else {
+          if(Object.keys(prices).length === 0) {
+            const defaultP = {};
+            DEFAULT_CARS.forEach(c => defaultP[c.n] = c.p);
+            setPrices(defaultP);
+          }
         }
         
-        if(Object.keys(prices).length === 0) {
-          const defaultP = {};
-          DEFAULT_CARS.forEach(c => defaultP[c.n] = c.p);
-          setPrices(defaultP);
-        }
-      }, [isAuthenticated]);
+        // Fetch fresh data from Google Sheets automatically
+        pullFromCloud();
+      }, [isAuthenticated, pullFromCloud]);
 
-      const saveToLocal = (log, pr) => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ salesLog: log, prices: pr }));
-      };
-
-      const showToast = useCallback((msg, type = "success") => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 2500);
-      }, []);
 
       const handleLogin = (e) => {
         e.preventDefault();
@@ -242,13 +316,14 @@
       const tx = dark ? "#e8e8e8" : "#1a1a1a";
       const txd = dark ? "#8b8fa3" : "#777777";
       const acc = "#4f8cff"; // Blueish accent
+      const wnC = "#f59e0b"; // Warning Orange
       const okC = "#22c55e";
       const dnC = "#ef4444";
 
       const S = {
         app: { fontFamily:"'Nunito','Segoe UI',sans-serif", background:bg, color:tx, minHeight:"100vh", maxWidth:600, margin:"0 auto", paddingBottom:80, fontSize:15 },
-        header: { background:dark?"#161822":"#fff", borderBottom:`1px solid ${cb}`, position:"sticky", top:0, zIndex:100, padding: "14px 16px 10px" },
-        hTop: { display:"flex", alignItems:"center", justifyContent:"space-between" },
+        header: { background:dark?"#161822":"#fff", borderBottom:`1px solid ${cb}`, position:"sticky", top:0, zIndex:100 },
+        hTop: { display:"flex", alignItems:"center", justifyContent:"space-between", padding: "14px 16px 10px" },
         logo: { fontSize:19, fontWeight:800, color:tx, display:"flex", alignItems:"center", gap:8 },
         crd: { background:card, border:`1px solid ${cb}`, borderRadius:12, margin:"8px 12px", padding:"12px 14px" },
         btn:(b,c="#fff")=>({ background:b, color:c, border:"none", borderRadius:8, padding:"10px 16px", fontWeight:700, fontSize:14, cursor:"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center", width: "100%" }),
@@ -256,7 +331,7 @@
         sel: { background:dark?"#252836":"#f0f0ec", border:`1px solid ${cb}`, borderRadius:8, padding:"9px 12px", color:tx, fontSize:15, width:"100%", boxSizing:"border-box" },
         nav: { position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:600, background:dark?"#161822":"#fff", borderTop:`1px solid ${cb}`, display:"flex", zIndex:100 },
         nI:(a)=>({ flex:1, padding:"10px 0 12px", textAlign:"center", background:"none", border:"none", color:a?acc:txd, fontSize:11, fontWeight:a?800:600, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }),
-        toast: { position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", background:toast?.type==="error"?dnC:okC, color:"#fff", padding:"10px 24px", borderRadius:10, fontWeight:700, fontSize:14, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.3)" },
+        toast: { position:"fixed", top:80, left:"50%", transform:"translateX(-50%)", background:toast?.type==="error"?dnC:okC, color:"#fff", padding:"10px 24px", borderRadius:10, fontWeight:700, fontSize:14, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.3)" },
         lbl: { fontSize:12, fontWeight:700, color:txd, marginBottom:4, display:"block" },
       };
 
@@ -315,7 +390,7 @@
 
         const newLog = [sale, ...salesLog];
         setSalesLog(newLog);
-        saveToLocal(newLog, prices);
+        saveToLocal(newLog, prices); // This triggers needsCloudSync
         
         // Reset form
         setBuyerIdx("");
@@ -366,6 +441,16 @@
           {toast && <div style={S.toast}>{toast.msg}</div>}
 
           <div style={S.header}>
+            {/* CLOUD SYNC BANNER */}
+            <div style={{ background: acc + "11", borderBottom: `1px solid ${acc}44`, padding: "8px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+               <span style={{ fontSize: 13, fontWeight: 800, color: needsCloudSync ? wnC : acc }}>
+                 {needsCloudSync ? "⚠️ Unsaved Changes" : "✓ Cloud Synced"}
+               </span>
+               <button onClick={pushToCloud} disabled={isSyncing || !needsCloudSync} style={{ ...S.btn(needsCloudSync ? wnC : acc), padding: "6px 16px", opacity: (!needsCloudSync && !isSyncing) ? 0.5 : 1, width: "auto" }}>
+                 {isSyncing ? "Saving..." : "☁️ Save to Cloud"}
+               </button>
+            </div>
+            
             <div style={S.hTop}>
               <div style={S.logo}>
                 <img src={LOGO_BASE64} style={{width: 24, height: 24}} alt="logo"/>
@@ -519,6 +604,15 @@
               <div style={{padding:"12px 14px 4px",fontSize:15,fontWeight:800}}>Settings</div>
               
               <div style={S.crd}>
+                <label style={S.lbl}>Cloud Sync</label>
+                <div style={{fontSize:12,color:txd,marginBottom:10}}>Pull the latest numbers from Google Sheets.</div>
+                <button onClick={pullFromCloud} disabled={isSyncing} style={S.btn(acc)}>
+                  {isSyncing ? "Syncing..." : "⬇️ Download Latest from Cloud"}
+                </button>
+                {lastSync&&<div style={{fontSize:11,color:txd,marginTop:8,textAlign:"center"}}>Last synced: {formatTS(lastSync.getTime())}</div>}
+              </div>
+              
+              <div style={S.crd}>
                 <label style={S.lbl}>Data Export</label>
                 <div style={{fontSize:12,color:txd,marginBottom:10}}>Export all your sales to an Excel file.</div>
                 <button onClick={exportExcel} style={S.btn(okC)}>📥 Export to Excel</button>
@@ -547,7 +641,6 @@
               </div>
             </div>
           )}
-
 
           {/* BOTTOM NAV */}
           <nav style={S.nav}>
