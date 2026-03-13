@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>⭐ Little Star Sales (Pro Offline)</title>
+  
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    body { margin: 0; padding: 0; background-color: #0f1117; overscroll-behavior-y: contain; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    const STORAGE_KEY = "littlestar-sales-offline";
+    
+    // --- CONSTANTS & DATA ---
+    const LOGO_BASE64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAFPCAYAAACifBDfAAAACXBIWXMAAAsTAAALEwEAmpwYAAA57mlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMwNjcgNzkuMTU3NzQ3LCAyMDE1LzAzLzMwLTIzOjQwOjQyICAgICAgICAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIKICAgICAgICAgICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj4KICAgICAgICAgPHhtcDpDcmVhdG9yVG9vbD5BZG9iZSBQaG90b3Nob3AgQ0MgMjAxNSAoV2luZG93cyk8L3htcDpDcmVhdG9yVG9vbD4KICAgICAgICAgPHhtcDpDcmVhdGVEYXRlPjIwMjEtMDItMDhUMTA6MTQ6MzUrMDU6MDA8L3htcDpDcmVhdGVEYXRlPgogICAgICAgICA8eG1wOk1vZGlmeURhdGU+MjAyMS0wMi0yMFQxMTo1NzozMSswNTowMDwveG1wOk1vZGlmeURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjEtMDItMjBUMTE6NTc6MzErMDU6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5jZUlEPnhtcC5paWQ6NWMyYjkyZTMtZjNhMi1jNzRkLTlmM2UtYmZiNjM0MTY5MzQ4PC94bXBNTTpJbnN0YW5jZUlEPgogICAgICAgICA8eG1wTU06RG9jdW1lbnRJRD5hZG9iZTpkb2NpZDpwaG90b3Nob3A6ZTcyNjU2MzUtNzM0OC0xMWViLTllYjItYzk1OGE1ZjY3YzM2PC94bXBNTTpEb2N1bWVudElEPgogICAgICAgICA8eG1wTU06T3JpZ2luYWxEb2N1bWVudElEPnhtcC5kaWQ6ZWViYWRkZTEtNjdhNi02YTQ3LWFhY2UtY2FlMTk0NTBhMDYyPC94bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpIaXN0b3J5PgogICAgICAgICAgICA8cmRmOlNlcT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+Y3JlYXRlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOmVlYmFkZGUxLTY3YTYtNmE0Ny1hYWNlLWNhZTE5NDUwYTA2Mjwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMS0wMi0wOFQxMDoxNDozNSswNTowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKFdpbmRvd3cyk8L3N0RXZ0OnNvZnR3YXJlQWdlbnQ+CiAgICAgICAgICAgICAgIDwvcmRmOlxpPgogICAgICAgICAgICAgICA8cmRmOlxpIHJkZjpwYXJzZVR5cGU9IlJlc291cmNlIj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmFjdGlvbj5zYXZlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOjVjMmI5MmUzLWYzYTItYzc0ZC05ZjNlLWJmYjYzNDE2OTM0ODwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMS0wMi0yMFQxMTo1NzozMSswNTowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICAgICA8c3RFdnQ6Y2hhbmdlZD4vPC9zdEV2dDpjaGFuZ2VkPgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgPC9yZGY6U2VxPgogICAgICAgICA8L3htcE1NOkhpc3Rvcnk+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgICAgIDx0aWZmOlhSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpYUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WVJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOllSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8ZXhpZjpDb2xvclNwYWNlPjY1NTM1PC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWERpbWVuc2lvbj4yNTY8L2V4aWY6UGl4ZWxYRGltZW5zaW9uPgogICAgICAgICA8ZXhpZjpQaXhlbFlEaW1lbnNpb24+MzM1PC9leGlmOlBpeGVsWURpbWVuc2lvbj4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InciPz7MfT+4AAAAIG5IUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAB9YSURBVHja7J15lBtVnuf9U2BEhwq8y+WmzzTiYvWBMnsQHjVgY7YcnDfSBmmCQvFiSBkzdM3MlMng3MG0QC2GazHLawWjZgwA5YDszJDCEPdQIEAwY12TjDpk4yyQSYlhoIEOyuO39UqVtut+1WqyRVqb6fc3TU6m6Vbt1bv8/93VtXVZYxBiGazeA35ySBOA5xDHFjiOOAMYBDAWPKDJHHoWDf/tOyaqwxWBKAaErAL5mTwNCNIYlDF473Bwcww4E//IwxMOT9PESvcUx26prHsqpJCUCEiDcv7ooZY3I4dGHcYMfxHuMXAMYxMEQ/Dj1T73ksp5qVAETQg///dcVxyBljplcCvU4BVF6vNg49+3z/MQ0NJAAR0OBPAHkcOo0x+CwAjEMfQyT32SAJ1EOHqkD4HvyXeMEPnQ38mOmAhgISgAhU8Ke7UsBzDQ7+Cl1vnD47o1qXAEQQgv/byRSwqskfu+iNz56QVO1LAKKlwd+VbkHwV0irBSQA0SLeuqwrC1zSwiJ0vX6KsoCJMFlVICYc+EuTMRwywMIAFKcHd+JR1IBOA4qJB797mm86xmAcAAscM3KqD7xTew05Deg+DwGOcZ+HOGK/hx8vqnU0BBAN5O3lXvC7p+KCRLdaRwIQjQz+K5MJoBDA4AfQPIDmAETDgv/qZILGL/CRAJQBiAAGf3fAgx+g8/WTTkiotSQA4SN/ujaZAjYEPPgrSAASgPAt+Fe0ZHVfPcTVapoDEH4EfyaZJRjn+DUPoAxANDX4V4Yy+IUyAFFX4F83J4axcmB1hXQXutSKEoCYSPBfPydGMBf4iAYRyqXA5rcfjmFMEmdrEsckME4CZ6gT43hLUQ0Y048xORyTtT76x4Kaeue8c8OcuDHkMEzHWLgPhh9m9NLdbV4HZimw+9jKX+3X+7javO0ygP/8aBzHpMc5Np0GLAIWmef37wOTxTE5K/FGUc0+KvhvPDEBVp5wnOYbDzG16vgIzyTga4kM8CoTm5iaDqwAXjWFqTnz3D4pNb0X/DedmCD4C3xEZAUw8IkYb3y84PXmfjAfWGWenVo2m2NZs9lORjb4v3diiuZdvksZgARQI4OzYjRuUqrTyyYeNc90Fs3TsYx5ako8OsE/O0W4FvjUQkKh3R4ZQJrmzEhX5gteNU9NKZin9k45m6a0bS/yzi0npNs4+EVbCOCt4+M+pv21zhesAkrOpik5Z9OU7nZq8HdvPSFLay/fJQJEkM8CpANQhvnAfGfThwbdxTFkOma9VQhl4N9+vHf5Lkur+0QohgBB6nkr8wXPOU/uXXSe3LvHeXLveKiC351LUfCLEAjg7ROSBHdmehreKUXnZ7G880Qs5Tw+NbDzBe/ecVwl+LW6T4QmA0iEpP66hucLHts36/x0/0DNF7ybPS5BcC/fJTQHsENiIazLhcBC5yf7D2KsLKYj25H8Q8vmC97Lzkq02eo+EbE5gLDSiXv24jnn0YMLQ///0J6hHx/W1PmC99bM6kar+4QE0HKGlyAPPTItN/SjeGro4SMbmt28d+fMFOG5fJeQACLDfG++oLj1347Obv3Xo5P+B/8nU2iBj2iDOYB2HyIsBBZu/eFf9GM6chgrM/m0XxfrCv67P5lFp/lEm2QA+YjU//AS5C0Pfbiw5cG/7Nnyg4/EFPwi6gIoR3i+oLRl40dyW3L/s3tXb3j/3hmxP6/9eF7BL9pLAB+K/NVc5gMbtmz4aHnLA8dmt9x/bGKs4PcyJV0DT7TlHEAfWsAyPF/w/vcT/e76ArJgAVZO9aMMsl2HAABFNc928wWX4F4V6VUF/04pqArCL4C8mkeI6ApAFhcisgLY+wllAEJEOAMAdyJQiFopqgraQwDKAkTN7Nf7uAQgAQghJAAhREgF0PlkWfMAokZ6VQXtkwEoCxBCAhBCRFMAU5/OqZlEDRRUBe2VAWhcJ2qhrCpoPwEoCxAiwgLQPIDQsRJZAez7TAEYVHMJEc0MQMMAMV6KqoL2FIBSO7FL9vuxvgegDEAI0WYC2L9QRqcDxc7R8dHGGYCyACEkACF2SEFV0M4COPDnRaBfzSZ2QFlV0N4ZgLIAsTOKqgIJQEgAom0FcPAv8mhVoJAAIpsBKAsQY7Lfw1oEJAGIqKLJ4agIwDrs1xKAUPof4QwAYKOaT1RRUBVESwDKAkQ1ZVWBBCCUAYgoCMA6/IWyhgFCGUB9TA55+XPAfDXjuOjzgqQ8qrcs7CB4ih/syRerf/H21ck4EB/jf2NAoup1wvsdQFczdm6/Hz6eVxNPoCM1xoS28KZ4dAzHlDAOOEO4zwZM1aPyGu9nHDCW93cHsNxn4z27W8YYq+qTvL9vV4BJYADTUfXA21YHGAvjPVP1bIb/r6Pq/yrvs6q2MfJ6ZDu4ZXbc8hjH+wwYxKEAVhFjFXEoGKzynqmfBSIwBpfMSWCIYUjgEMMhAcRxmE6liZyRZ4yBIe/nITDO6Nfe8xDgmMF9H3o8pnCOWAZgxV8qm1eO2hjBLKDf67kLuFdKKuzxhacCnQJ3LvtJJevYTkiDi+ZUMouk95wApmv8LwFoGODS6wVOHijsftazbTXe7Vz5kyLuefxt5FD66olJTwaJXUhBAoi4AFa1a8DvdsbzkR3b2rf+NF8thYEvzI55WULCe67ML5QVyhGcAxgeir98RA5naH6I5wAGjSGHsXIYK7/b6b/UAT1O3jh9dhLHFPd9SN8DiLIAUjhDq0ImgH5MRw7TkZ186gtKYYWGABEYBgwCWSA7+eSXFPRCGYBvWcCLh+cwzvyAZgAbMR3ZSXP7czrkhDKAxmUBQTob0O/19plJJ/1WY3qhDKDBGUAM45QCkAH0YqxMR9cf1duLwNPRLjtiHfObMq39bsBq4IiOOa8lFfxCQ4BoDAMqk3qZjtlvFHU4CQ0BWjkM+PdDve8GNHwIMAhkMJMyHceVNb73KJ12SRIMlmVG6tE9ysr2g5cXVEMSQOMl8MIhOYyZ30ABrAZ6Oma9FenAL516aQzoBpPEIglmWqXuxhBA5WgDy3j37zN5MGUsCmAKdu5KiVQC8EUAKYxZ1QABrAbSHbPeinSqXzrl20ksUmAWVuoKy3senwCG/zbqvYNgChUhgCnaG67JK0QlgFoFEMNUDQPqF0AvOOmOmW/nox3430kCaTBdowPeJwGMej38nl6oSIG8/cAKzbVIALuQwK8PzmLMwjoFMAj0dMx8MxvpwD/5shgWaTCLdhTwDRZA1f8Dlhl0hw/ul6Xs+1dqbkEC2E4A3RizoQ4BrDTGSnfMfLMc8eBPADkspu0s4JssgKr/30YIOSyTt9dfrwwh6gIAML86qIwxnTUKoA/osT75ZuTHnqWTL0+ByQCduwr4Fgtg9P/2g8mCydrrb5QMIiwAdxgwfgFcan2inA50Y90/0AFYWJZjzrBN44L/ihSYVSOBFSoBVG97NZisve6mvEI9egJIYsyj4xBAP8bptj4+GKixpLX+jQ5gdyxrEjAJy7KoXBHPsoaAIXOGvdX34P/0FSk6WLVtEIZWAJWfe4G0ve57EkFUBABgfnlgEcdM24kAVoPVY80otXysb9332m5Y7AHWB4DdhgPeC3Ysy7sM5rAAHLC2mjNixr/gX5oA85y7QLytBFD5ex+Qse+7OavQj4YAMjhm0RgCGMSYHutjAy07EKx7/3MSWFOAvbzA78DCAWvbIN+5AIbMGTHHj/IMfHppzIIimM42FkDl7/1g0vZ9t0ZeBJPbfP+ywKJRv+sDUtbHBpqe8ltr//BBIIZldWKx+3BKP/JodV11RuS4nwasKp391TSYtH3vbZEVQVtnAADm5wcUMWaalwFsBCdlJQaalvJbd/3HvljWPoCNZTHcq1sMgderuz8PTSAD8GUIMPDppd3ABqvSe7Z/BjD6s90zB5bJ2PfcUZYA2ksAPRizAsxq69jXU02p1Dt/dwiwH5bVCXRUBfGQjwLwZRJwYN6yGJYpAp0RFoD32rhf8sJk7HtWRUIEkyOwjzmgbB37ekPTPGv1bw7Csg4EDvAm8CppvdOgj/RryJCOUOq/KzqBS4Ce0t+ek8EyGXtttq1F0PYZQEMrL9tvY1lx4PCqnt4Zs8f3NwN435/ef3kSzKOVnlEZwHaf5U4Wrl2dlQDESKWtKh4N1v/AYsrIeHwXAe+fALaaM6e+68d+DMxbXgAzXQLYoQCq5wjS9to1WQkgqkF/x6t7g/URLI5yh05eEDdfAO+YM6cO+RD8PcCK6gNfAtjZZ5mRjODuu7ISQFQC//ZXDsGyjnXT/ErgeoHafAG8b86c+k7dwX/S8jgdFNwxrwRQgwAqr3sty6Rjd92d1yRguwb+bS8fhmXNBA5k5Hx9q3lPE3+BoAt4tPzFz/cCPbG71haUAbRL4N/60kfBOh6LD26ffrc0A3jPn97/Snfib/h60MoAJpABePs4/LfVWKRjd95TVAYQ1sC/5aVpWJwIHBKgHr8qSn3r/TNqbd9ZCHSX//fZGTCZ2J33lZUBhCbwXzzCTemsw7ze3e2ZR3r3IGQAb5vP7VP3zP/ASVelhr/mqwzAzwyg+rP6gXTszvuyEkCQd/zmf98TOBXLmr5N0AdPAFuB/zKf28fUGfwxKl/2kQAaKYDKe3sNpO016wI9UdgR0eCfBywGPhaC4r5bb/B79Gjir/kThaUvfS5b+tKZMWUAQdjZm144BMs6G8s6YFSvHdQMYItZsO/rdaf+yavjTDKvbtP7KQNodAbg/eQAZhBI22vuD9z8SyQmAa0bX9gTi1OBEwnGV2/Hy9s+bSetDrmldAIrSl86IwUmZa/ZUNAQoGnB/+vDgG8AyZAVfcgs2Lf+ib/kNUncWWrReqYDz5W+1J0pLeyOSQCND/65wMW4p/bCxlvq/duWRUChtHB+yzulthwCWDf8ai/g3JEZ/tDhmAX71r3op+T2/l2Kt0AyDXi0tPD0lWDS9uoHy8oA/NihG341DbgQ+KsQ74bG/lHLBlKfTUoA9e7M9b/8S+Ai4LAQ74bjR/pfSl6bUu8fsmwgdVqmlDotJgFMgEnX/7IL+Cdgr5DvypvmrP38uIqQev9wZgP50jmnJiSAWoL/ul8kga+1yUFQd/pfmrMi5fUqIny4ZwrOOaVHAhgHk7/7i78G/q5NGv8tc9Z+ftztR71/+FlROufkXOmck2MSwA6D/+cnARe0UaMP1t/7Z9T7tw/zgXz53M8kJIBR7OYG/9fbqLH/bM7a/8/q/cUYQ4J8+dx53RJAJfhXPj8P98st7UTZh96/W71/W9IJbCifOy8VeQHsvvL5f8Rd2ttOOOZv9n/Th+30KFbamlXlc+dmIiuA3TPPfwuY14YN68PYf2USnfePAovKXz4pGzkB7J7pWwx8uk0bdUC9v6iBheUv/3U2MgL4QKbvQuAzbdqY75m/OWBLXb3/7JVx3BljESkJfCrb9gL4wIrCxcDJbdyQ/+XDNtKKh6hKIJlqWwHssaLwT8Apbd6Ida37L83+bgzoVixEllXlr3Ql2k4Ae1xb+Gfg1DZvvDfN2QfU+3XlFLrWX9TJlb/SFWsbAex57XNp4LQINJwm/4QfTJvoMDBwAtjzmme/DXw2Ao02ZM4+oK5z/6XZ1yXRwh/hsqj8lRPjoRbAXtc8+0Xgf0WkwQZ92IZ6f1FNOrQC2OvqZ7uBb0WoseoSQGn29TF06k9sS3coBfChqzefBFwWpZYyZx9YbwaQ0vEuRtFZ/srseKgEsPdVmz8MLI1YQ5WV/osGER4BxK56ZgpwJ7C3BFBD+n/89Qk0+Sd8oNUZwN0RDH6o/6KfSv/F2J3qbY/lQyGAfa565mrgwxFso3fM3x74fp3b6NahLsZgdSgygH2vfGYBcGZEG6m+c//H39Ct9F+MwSATmBdqugD2v/LpjwDXRLihynW+X72/GCv4k7HbfloOtAAOWP70FOD2KLeU+fxBb0oAwkf63eDvLUzkzc3OAL4DHBrhxqo3/U+gL/6IkV7/UiAx0eCHJt4c9JBlT52CZZ1FOG/WGQgBoNl/4QZ+BsjEbn+03uFkcwRw6LKnOoHr1HZ1CyCpKoxs0OeAXOyOR3J+brhZGcANwJSI9/4AE77ld+m4G+NYTFcsRIZeIO8G/b8VGvUhDRfA4Us3zcayTlHw8yfz+YPque2Xev+I9PJA3l71w3IzPrQZGcCNaltXAEr/xSj6vF4+a2cfKrSiAA0VwOFLN10IHIZ7z3sJQAIQbtBngZy9emOx1YVpmADiSzd10j537W2pAEozb4zTodV/bRH0azYUg1SwRmYAF6CJP78yAPX+4aPfG89n7TX3F4JayIYIIH7Fk51Y1gU6BoZ5z3zh4HomABOqwtCwGsjF1qzLhaGwjcoA/l69/zbUe9tvCSD4vX0GyMbuvK8cpoL7LoAjr3gy5qX/YoS363y/bvoZ3N4+G7vrnnxYd6ARGcDpuOvVNfM/woTT/9LMm9T7B4vB4d7+rrXFsO9MIwTwdR0jYx40EyWu6gtMmp8Gcvbdd5XbZad8FcDRlz8Zx+JYjf19RRlAa+kDMvbaNdl23Dm/MwBdp34MzBcOrqfHUAbQGnqBtL12db6dd1ICCD4SQPN7/B77nlX5KOys3wLoUvq/HW9LAOEZ49v33JGN0k77JoCjL/9ZEiwdRtuztc73awlwYxkE0va9t2eiuPN+XhIsqWNJhIyVQNy+97ZMVCvAzyGAUtWxeW+ibyzNvEl12hh6gZR9763FqFeEBBBgAahOG5Lup+z7bsmpKvwfAggRZFYDcfu+mxX8ygBEhOgHUva67+VVFY3NADRbLYLGRiCh4G9OBtALnKgqFQEZ6/fY627MqiqaJwAhgkAfkLLX31hQVTR3CFBWdfqO6rQ2VgNJe/0NCv4WCECV7jP2pq+pTsfPN+z116fs9ddLmi0SQF7VKVrEOfb3r8uoGloogJcuPk4CaAz9qoJdBn9W1dD6DADgB6pS3ymqCnbISvv731XwB0gAaozt2aPO92seYGz67PtX9qgaAiSAly6etRH4japVAmgwg0C3qiF4GQDAl1WtviIBbE/Gvn+lhkZBFMArF83qBR5U1Q5T12Ir71TgoKpxmMpNOERAMwCArwJvqnrrF4BHXtU4TNa+f2VZ1RBgARQvmjUIfEbVC8AbPmwjp2ocHvur9w9BBkDxwpnPA1+LeP2+DrwqAfhGzr4/o94/YOnpDvnNhTPvPnzpJgNcDnwwRPXyW9xbmzm4Vzk23s+/836uvK48v+b9TNXf3zVfPORdPwpjb/o/5dJxN25El12XCMMkAE8Caw9d9tTPcb+ocZAPm3wN+H1VgFYeb3m9bXVwGuBPjJyaNFWB+q45/y9+H7KDP9ICsB9YIQH4jGWMadqHHbD86eONxSwHyxgLMwTOENbvjMXvHCyDhVsayzIG6/fvfTPxBzXRCKXjbygDnWC8wZsZeQy/9p473N+byutJoxKU4cGfAcv9mzX83lGutEZtexevLWvkZ7c9K9sZ+azh7e9wW1Xvcf+20X5gRbeOgpBlANX8cfEnngCeULXXlQUsVPov/EIXBVUQaN8lABES8hHd7z77gRVlNb8EEGnsJ/6ujHuhy6iRVetLACK6qXBezS4BiGgKoN9+4NqCml0CECPDgD4JT0gA0SVKY2Kl/xKAiGivOGg/cK0yAAlAbDsMuKAYkWGAen8JQOyAjDIdIQFoGKB9FBJA5IYBj11Qpr0XBfXaG64pq6UlABHNHlK9vwQgxhEkgxKAkAAiOQz4+3KbBkq/veGaolpYAhC7JqveX0gAkc0Cvp6n/W4gKgFIACKiWcCgveHqvJpUAhDRFIB6fwlA1DYMWFSkfdYEqPeXAESEswBlAE2kqZcFDzoD8WPiQBxIALFRfy56j8LU4ovlIJa/NCdTBKaF+LLgG+3cVd06EpvH5IgHfAz3PvPdQBLoHOf7+r1UNTe1+GKQeqwscInSf6EMYOcBnAB68Oca+/1e4GVanRmU5mRiQCnEGcARdu6qosJSAmhkip+hMbfYqty5tqUiKM3JZMEsDKEA+uzclQmFZHPpiFDwp3HvHdio++t1eul3YSB+TLKFu5pR+i8kgKpx/kD8mHwTx8bTgEc94TQd+yc9BaA3hE2VUzhKAI0Y6xeArhZ8/CUD8WOyLdr1dNjays5dqQxAAvA9+PNej9wqFg7Ejyk0Pwv4Rp5wfT+gV6EoAfia9nvB3xmA4kxvUSYQpixAvb8E0JbBX50JZJqaBeS/mQ1RFqDxvwTga883PYDlWtSCswNhyAIG7dyVBYWiBOBH758EFgW4iFkvQ2lSFvAPYcgC1PtLAP4FWMDLNw13BaKyAI3/JQCfe/8UrZ3xHy+XeCsSm8LU4GcBygAkgMiMdyv0tPnnjZeNdm55WWEoAdTb+3eHpPevkGrmh03N/2OOYJ5rzyoEJQA/6A5ZeTu9IUuUs4BBe+Nypf8SQCQFAO71B5qXBfz4WwVgtXp/0VYC8E79dYaw6K2QVg/BuZNQRuEnAYSuJ/V5GBBvchZQJhiTpRvtjcuKCj8JwA/iKnstEvi/GVo/IajeXwKQAFqYvaRaOBTotTcuzSv0JADRIqb+eHGxhUOBtFpAAvCTLjXjBCTwo8UZmn8zEfX+EoAIECmgr8mfJyQAX+lXM044Cyg3cT7gUvsHVxRV6xKA3+igqksCSwo0fk1Cn/3g5Rr7SwAiiPKa+vCFeeCcBm1+kHCu1JQAQkJeAvBFAtkGSaDbfvByZWkSQMMohDb9Lr4YKHnZIxLwa07gHPuhy/IKMwlAAhhjXBzEQtkPX5TFXaBUz+TqIHBO7KHLsgoxCaDRvWgxqMG0CwIbHPa/XlTAvUX6ygmKLRl76DsK/hDQFjcHHYgf0wOsCFmxj/DkFWhKJ18WxyINphvo3MnNQfuBtP0vlyrwJYCmCyAGlEJU5N6pxReTYavn0inf6QaTwCIOJu4Ov0wZi5z9L+mCwkkCaKUEssDCkBT3U0GbABSaAwg76RD1/gp+IQH4iTeeXhmCoqZ12AkJoHHBFeTvBqxU7y8kgMZlAWWCu+y0T72/kAAaL4ECjVvXPlEGgZQnKCEkgAZLIBug+YBBIOmJSYhA0TanAcciAKcGFfxCGUALM4FUC4cDCn4hAQRkOPApmnt2oBeIK/iFhgDBGQ7EcGfhFzW41+/xpCOEBBBAEcQ9ESz0OfAzQEYz/UICCI8IUt5jorcW78X9Wm9OgS8kgHDLIOk94t5jtBT6gDLuJcgKQF5BLyQAIURo0VWBhZAAhBASgBBCAhBCSABCCAlACCEBCCEkACGEBCCEkACGEBKAEEICEEJIAEIICUAIIQEIISQAIQQEoAQQgIQQkgAQggJQAghAQghJAAhhAQghJAAhBASgBBCAhBCSABCiIbz3wMAQlrpB42hstsAAAAASUVORK5CYII=';
+
+    const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+    const DEFAULT_CARS = [
+      {n:"Sprinter",p:2750},{n:"Stroller",p:2400},{n:"Twilight",p:2000},{n:"Super Tolo",p:1750},{n:"Swift Rider",p:1350},{n:"Sparkle",p:1550},
+      {n:"Panda",p:1800},{n:"Mercedese",p:1700},{n:"Mic Cruiser",p:2850},{n:"Sunflower",p:1800},{n:"Rainbow",p:1900},{n:"3D",p:1150},
+      {n:"Classic",p:1500},{n:"Crystal",p:1700},{n:"Duckling",p:2000},{n:"Jaguar",p:1400},{n:"Jungle",p:1300},{n:"Mick. Mouse",p:2050},
+      {n:"Mick. Rider",p:2200},{n:"Minion",p:2150},{n:"Skyjet",p:1550}
+    ];
+
+    const WHOLESALERS = [
+      {n:"Khwaja",c:"Karachi"},{n:"Naqi",c:"Karachi"},{n:"Saleem",c:"Karachi"},{n:"Mairaj",c:"Karachi"},{n:"Moosa",c:"Karachi"},{n:"Umair",c:"Karachi"},
+      {n:"Evergreen",c:"Karachi"},{n:"Noor Alam",c:"Karachi"},{n:"Irfan",c:"Karachi"},{n:"Aslam",c:"Karachi"},{n:"Ashraf",c:"Karachi"},
+      {n:"Rajesh",c:"Karachi"},{n:"Khaleel Cycle",c:"Karachi"},{n:"Shamshad",c:"Karachi"},{n:"Hamza Col",c:"Karachi"},{n:"PVT",c:"Karachi"},
+      {n:"Tanzeel",c:"Karachi"},{n:"Super Cycle",c:"Karachi"},{n:"Memon Cycle",c:"Karachi"},{n:"Mudassir",c:"Karachi"},{n:"Usman Aziz",c:"Karachi"},
+      {n:"Shandar Cycle",c:"Karachi"},{n:"Alkaswa",c:"Karachi"},
+      {n:"Faisal Digri",c:"Sindh"},{n:"Raja Bright",c:"Sindh"},{n:"Fancy Cycle",c:"Sindh"},{n:"Ghousia Digri",c:"Sindh"},
+      {n:"A1 Lahore",c:"Punjab"},{n:"Farhan Yousuf",c:"Punjab"},{n:"Fahad Lahore",c:"Punjab"},{n:"Talat Sialkot",c:"Punjab"},{n:"Pak Punjab",c:"Punjab"},
+      {n:"Aslam Cycle",c:"Punjab"},{n:"Imran Cycle",c:"Punjab"},{n:"Abdul Hafeez",c:"Punjab"},{n:"Khurram Pindi",c:"Punjab"},{n:"Aslam Cycle 2",c:"Punjab"},
+      {n:"Sheikhpura",c:"Punjab"},{n:"Fine Cycle",c:"Punjab"},{n:"Dilawar But",c:"Punjab"},{n:"Khurram Pindi 2",c:"Punjab"},
+      {n:"Quetta Khalid",c:"Balochistan"},{n:"Mudassir 2",c:"Balochistan"},
+      {n:"Umer Cycle",c:"KPK"},{n:"Ayaz Banaras",c:"KPK"},{n:"Irfan Mangora",c:"KPK"},{n:"Mardan",c:"KPK"}
+    ];
+
+    // --- HELPER FUNCTIONS ---
+    const fmt = n => (n||0).toLocaleString('en-PK');
+    const todayStr = () => new Date().toISOString().split('T')[0];
+    
+    function fmtD(d){
+      try{
+        const dt=new Date(d+'T00:00:00');
+        const dd=String(dt.getDate()).padStart(2,'0');
+        const mm=String(dt.getMonth()+1).padStart(2,'0');
+        return dd+'/'+mm+'/'+dt.getFullYear();
+      }catch(e){return d}
+    }
+
+    function getMonthPrefix(dateStr){
+      const d = dateStr ? new Date(dateStr+'T00:00:00') : new Date();
+      return MONTH_NAMES[d.getMonth()];
+    }
+
+    // Invoice Printing Base Code
+    function printSlipHTML(sale) {
+      const w = window.open('', '_blank', 'width=1100,height=800');
+      
+      const invoiceCopyHTML = (label) => {
+        const wp = sale.withPrice;
+        let thExtra = '', grandTotalExtra = '';
+        const grandTotal = sale.items.reduce((s,x) => s + (x.qty * x.price), 0);
+        
+        if (wp) {
+          thExtra = '<th class="r">Rate</th><th class="r">Total</th>';
+          grandTotalExtra = `<td class="r"></td><td class="r" style="font-size:11pt;font-weight:800">PKR ${fmt(grandTotal)}</td>`;
+        }
+        
+        const rows = sale.items.map((it, i) => {
+          let extra = ''; 
+          if(wp){ extra = `<td class="r">${fmt(it.price)}</td><td class="r" style="font-weight:700">${fmt(it.qty * it.price)}</td>`; }
+          return `<tr><td class="c" style="color:#888;font-weight:700">${i+1}</td><td style="font-weight:700">${it.name}</td><td class="r" style="font-weight:800">${it.qty}</td>${extra}</tr>`;
+        }).join('');
+        
+        const minRows = Math.max(0, 8 - sale.items.length);
+        let emptyRows = '';
+        for(let i=0; i<minRows; i++) emptyRows += `<tr><td>&nbsp;</td><td></td><td></td>${wp?'<td></td><td></td>':''}</tr>`;
+
+        return `
+          <div class="invoice-copy">
+            <div class="copy-badge">${label}</div>
+            <div class="inv-hdr">
+              <img src="${LOGO_BASE64}" class="inv-logo" alt="Logo">
+              <div class="inv-hdr-text">
+                <h1>Little Star</h1>
+                <div class="tagline">Quality Kids Vehicles&ensp;•&ensp;Karachi, Pakistan</div>
+              </div>
+            </div>
+            <div class="inv-sep"></div>
+            <div class="inv-meta">
+              <div class="inv-mi"><b>Date:</b><span>${fmtD(sale.date)}</span></div>
+              <div class="inv-mi"><b>Bill No:</b><span style="font-weight:800;letter-spacing:.5px;font-size:12pt">${sale.slipNo||'\u2014'}</span></div>
+              <div class="inv-mi"><b>Buyer:</b><span style="font-weight:800;font-size:12pt">${sale.wholesaler}</span></div>
+              <div class="inv-mi"><b>City:</b><span>${sale.city}</span></div>
+            </div>
+            <div class="inv-table-wrap">
+              <table class="inv-table">
+                <thead><tr><th class="c" style="width:7%">#</th><th>Model</th><th class="r">Qty</th>${thExtra}</tr></thead>
+                <tbody>${rows}${emptyRows}
+                  <tr class="trow"><td></td><td style="font-weight:800">TOTAL</td><td class="r" style="font-weight:800">${sale.totalUnits} units</td>${grandTotalExtra}</tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      };
+
+      const content = `<div class="invoice-copies">${invoiceCopyHTML('BUYER COPY')}${invoiceCopyHTML("OFFICE COPY")}</div>`;
+
+      w.document.write(`
+        <!DOCTYPE html>
+        <html><head>
+        <title>Invoice ${sale.slipNo ? '#' + sale.slipNo : ''}</title>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+        <style>
+          @page{size:A4 landscape;margin:0}
+          *{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans","Segoe UI",sans-serif}
+          body{width:297mm;margin:0 auto}
+          .invoice-copies{display:flex;width:100%;min-height:210mm}
+          .invoice-copy{width:50%;padding:8mm 12mm 8mm;position:relative;overflow:hidden;border-right:2px dashed #bbb;display:flex;flex-direction:column}
+          .invoice-copy:last-child{border-right:none;border-left:2px dashed #bbb}
+          .copy-badge{position:absolute;top:5mm;right:8mm;font-size:7.5pt;font-weight:800;color:#1a1a2e;background:#e8e8f0;padding:2px 10px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px}
+          .inv-hdr{text-align:center;margin-bottom:3mm;display:flex;align-items:center;justify-content:center;gap:4mm}
+          .inv-logo{width:14mm;height:auto}
+          .inv-hdr-text h1{font-size:20pt;font-weight:800;color:#1a1a2e;letter-spacing:3px;text-transform:uppercase}
+          .inv-hdr-text .tagline{font-size:8pt;color:#888;margin:1mm 0 0;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+          .inv-sep{height:2px;background:linear-gradient(90deg,transparent,#1a1a2e,transparent);margin:2.5mm 0}
+          .inv-meta{display:grid;grid-template-columns:1fr 1fr;gap:2mm 8mm;margin-bottom:4mm;padding:3mm 4mm;background:#f4f4fa;border-radius:2mm;border:1px solid #e0e0e8}
+          .inv-mi{display:flex;gap:2mm;font-size:10pt;font-weight:600}
+          .inv-mi b{color:#1a1a2e;min-width:20mm;font-weight:800}
+          .inv-mi span{color:#333;font-weight:700}
+          .inv-table-wrap{flex:1;display:flex;flex-direction:column}
+          .inv-table{width:100%;border-collapse:collapse;font-size:9pt;font-weight:600}
+          .inv-table th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+          .inv-table td{padding:1.8mm 3mm;border-bottom:.5px solid #ddd;font-weight:600}
+          .inv-table tr:nth-child(even) td{background:#f8f8fc}
+          .inv-table .trow td{border-top:2.5px solid #1a1a2e;font-weight:800;font-size:10pt;background:#e8e8f8!important;color:#1a1a2e;border-bottom:none}
+          .r{text-align:right!important}
+          .c{text-align:center!important}
+          @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        </style>
+        </head><body>${content}</body></html>
+      `);
+      
+      w.document.close();
+      w.focus();
+      setTimeout(() => { w.print(); w.close(); }, 500);
+    }
+
+
+    function App() {
+      // --- STATE ---
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [passwordInput, setPasswordInput] = useState("");
+      const [rememberMe, setRememberMe] = useState(false);
+      
+      const [dark, setDark] = useState(true);
+      const [tab, setTab] = useState("entry");
+      const [toast, setToast] = useState(null);
+      
+      const [salesLog, setSalesLog] = useState([]);
+      const [prices, setPrices] = useState({});
+      
+      // New Sale State
+      const [saleDate, setSaleDate] = useState(todayStr());
+      const [buyerIdx, setBuyerIdx] = useState("");
+      const [withPrice, setWithPrice] = useState(false);
+      const [carQtys, setCarQtys] = useState({});
+
+      // Auth Check
+      useEffect(() => {
+        if (localStorage.getItem("littlestar-auth") === "hamza") {
+          setIsAuthenticated(true);
+        }
+      }, []);
+
+      // Load Data
+      useEffect(() => {
+        if (!isAuthenticated) return;
+        const localVal = localStorage.getItem(STORAGE_KEY);
+        if (localVal) {
+          try {
+            const d = JSON.parse(localVal);
+            if (d.salesLog) setSalesLog(d.salesLog);
+            if (d.prices) setPrices(d.prices);
+          } catch(e){}
+        }
+        
+        if(Object.keys(prices).length === 0) {
+          const defaultP = {};
+          DEFAULT_CARS.forEach(c => defaultP[c.n] = c.p);
+          setPrices(defaultP);
+        }
+      }, [isAuthenticated]);
+
+      const saveToLocal = (log, pr) => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ salesLog: log, prices: pr }));
+      };
+
+      const showToast = useCallback((msg, type = "success") => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 2500);
+      }, []);
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        if (passwordInput === "hamza") {
+          setIsAuthenticated(true);
+          if (rememberMe) localStorage.setItem("littlestar-auth", "hamza");
+        } else {
+          showToast("Incorrect Password", "error");
+        }
+      };
+
+      const handleLogout = () => {
+        localStorage.removeItem("littlestar-auth");
+        setIsAuthenticated(false);
+        setPasswordInput("");
+        setRememberMe(false);
+      };
+
+      // Styles
+      const bg = dark ? "#0f1117" : "#f5f5f0";
+      const card = dark ? "#1a1d27" : "#ffffff";
+      const cb = dark ? "#2a2d3a" : "#e2e2dd";
+      const tx = dark ? "#e8e8e8" : "#1a1a1a";
+      const txd = dark ? "#8b8fa3" : "#777777";
+      const acc = "#4f8cff"; // Blueish accent
+      const okC = "#22c55e";
+      const dnC = "#ef4444";
+
+      const S = {
+        app: { fontFamily:"'Nunito','Segoe UI',sans-serif", background:bg, color:tx, minHeight:"100vh", maxWidth:600, margin:"0 auto", paddingBottom:80, fontSize:15 },
+        header: { background:dark?"#161822":"#fff", borderBottom:`1px solid ${cb}`, position:"sticky", top:0, zIndex:100, padding: "14px 16px 10px" },
+        hTop: { display:"flex", alignItems:"center", justifyContent:"space-between" },
+        logo: { fontSize:19, fontWeight:800, color:tx, display:"flex", alignItems:"center", gap:8 },
+        crd: { background:card, border:`1px solid ${cb}`, borderRadius:12, margin:"8px 12px", padding:"12px 14px" },
+        btn:(b,c="#fff")=>({ background:b, color:c, border:"none", borderRadius:8, padding:"10px 16px", fontWeight:700, fontSize:14, cursor:"pointer", display:"inline-flex", alignItems:"center", justifyContent:"center", width: "100%" }),
+        inp: { background:dark?"#252836":"#f0f0ec", border:`1px solid ${cb}`, borderRadius:8, padding:"9px 12px", color:tx, fontSize:15, width:"100%", boxSizing:"border-box", outline:"none" },
+        sel: { background:dark?"#252836":"#f0f0ec", border:`1px solid ${cb}`, borderRadius:8, padding:"9px 12px", color:tx, fontSize:15, width:"100%", boxSizing:"border-box" },
+        nav: { position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:600, background:dark?"#161822":"#fff", borderTop:`1px solid ${cb}`, display:"flex", zIndex:100 },
+        nI:(a)=>({ flex:1, padding:"10px 0 12px", textAlign:"center", background:"none", border:"none", color:a?acc:txd, fontSize:11, fontWeight:a?800:600, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }),
+        toast: { position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", background:toast?.type==="error"?dnC:okC, color:"#fff", padding:"10px 24px", borderRadius:10, fontWeight:700, fontSize:14, zIndex:9999, boxShadow:"0 4px 20px rgba(0,0,0,0.3)" },
+        lbl: { fontSize:12, fontWeight:700, color:txd, marginBottom:4, display:"block" },
+      };
+
+      if (!isAuthenticated) {
+        return (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "#0f1117", color: "#e8e8e8", fontFamily: "'Nunito', sans-serif" }}>
+            <form onSubmit={handleLogin} style={{ backgroundColor: "#1a1d27", padding: "40px 30px", borderRadius: "16px", textAlign: "center", width: "320px", border: "1px solid #2a2d3a", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+              <div style={{ fontSize: "40px", marginBottom: "10px" }}>⭐</div>
+              <h2 style={{ margin: "0 0 20px 0", fontSize: "22px", fontWeight: "800" }}>Little Star Sales</h2>
+              <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)}
+                style={{ width: "100%", padding: "12px", marginBottom: "12px", borderRadius: "8px", border: "1px solid #2a2d3a", backgroundColor: "#252836", color: "#fff", fontSize: "16px", boxSizing: "border-box", outline: "none" }}
+                placeholder="Enter password" autoFocus />
+              <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "#8b8fa3", fontSize: "14px", marginBottom: "20px", cursor: "pointer" }}>
+                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} /> Remember me
+              </label>
+              <button type="submit" style={{ width: "100%", padding: "14px", borderRadius: "8px", border: "none", backgroundColor: "#4f8cff", color: "#fff", fontWeight: "800", fontSize: "16px", cursor: "pointer" }}>Unlock App</button>
+            </form>
+          </div>
+        );
+      }
+
+      // --- LOGIC: NEW SALE ---
+      const activeBuyer = buyerIdx !== "" ? WHOLESALERS[buyerIdx] : null;
+      
+      const getNextSlip = (buyerName) => {
+        if(!buyerName) return "";
+        const prefix = getMonthPrefix(saleDate);
+        const s = salesLog.filter(x => x.wholesaler === buyerName && x.slipNo && x.slipNo.startsWith(prefix));
+        if(!s.length) return prefix + '-001';
+        let mx = 0; 
+        s.forEach(x => { const parts = x.slipNo.split('-'); const n = parseInt(parts[parts.length-1])||0; if(n>mx) mx=n; });
+        return prefix + '-' + String(mx+1).padStart(3,'0');
+      };
+
+      const handleGenerateInvoice = () => {
+        if (!activeBuyer) return showToast("Select a buyer!", "error");
+        
+        const items = [];
+        DEFAULT_CARS.forEach(c => {
+          const q = parseInt(carQtys[c.n]) || 0;
+          if (q > 0) items.push({ name: c.n, qty: q, price: prices[c.n] || c.p });
+        });
+
+        if (!items.length) return showToast("Enter at least one quantity", "error");
+
+        const sale = {
+          id: Date.now(),
+          date: saleDate,
+          slipNo: getNextSlip(activeBuyer.n),
+          wholesaler: activeBuyer.n,
+          city: activeBuyer.c,
+          items,
+          totalUnits: items.reduce((s, x) => s + x.qty, 0),
+          withPrice
+        };
+
+        const newLog = [sale, ...salesLog];
+        setSalesLog(newLog);
+        saveToLocal(newLog, prices);
+        
+        // Reset form
+        setBuyerIdx("");
+        setCarQtys({});
+        setWithPrice(false);
+        showToast("Sale Saved & Printing...");
+
+        // Print
+        printSlipHTML(sale);
+      };
+
+      // --- LOGIC: EXPORT ---
+      const exportExcel = () => {
+        if (!salesLog.length) return showToast("No data to export", "error");
+        const rows = [];
+        let n = 1;
+        salesLog.forEach(s => {
+          s.items.forEach(it => {
+            rows.push({
+              '#': n++, 'DATE': fmtD(s.date), 'BILL NO.': s.slipNo, 'BUYER': s.wholesaler, 
+              'CITY': s.city, 'CAR MODEL': it.name, 'UNITS SOLD': it.qty, 
+              'UNIT PRICE (PKR)': it.price, 'TOTAL (PKR)': it.qty * it.price, 'NOTES': ''
+            });
+          });
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [{wch:5},{wch:12},{wch:12},{wch:16},{wch:10},{wch:14},{wch:11},{wch:15},{wch:14},{wch:10}];
+        XLSX.utils.book_append_sheet(wb, ws, 'Sales Log');
+        XLSX.writeFile(wb, `LittleStar_Sales_${todayStr()}.xlsx`);
+        showToast('📥 Exported Successfully!');
+      };
+
+      // --- LOGIC: DELETE ---
+      const deleteSale = (id) => {
+        if(confirm("Are you sure you want to delete this sale? This cannot be undone.")){
+          const newLog = salesLog.filter(s => s.id !== id);
+          setSalesLog(newLog);
+          saveToLocal(newLog, prices);
+          showToast("Sale deleted");
+        }
+      };
+
+
+      return (
+        <div style={S.app}>
+          <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+          {toast && <div style={S.toast}>{toast.msg}</div>}
+
+          <div style={S.header}>
+            <div style={S.hTop}>
+              <div style={S.logo}>
+                <img src={LOGO_BASE64} style={{width: 24, height: 24}} alt="logo"/>
+                Little Star Sales
+              </div>
+              <button style={{background:"none", border:"none", fontSize: 20, cursor:"pointer", color: tx}} onClick={()=>setDark(!dark)}>
+                {dark ? "☀️" : "🌙"}
+              </button>
+            </div>
+          </div>
+
+          {/* TAB 1: NEW SALE */}
+          {tab === "entry" && (
+            <div>
+              <div style={{...S.crd, borderTop: `4px solid ${acc}`}}>
+                <div style={{display: "flex", gap: 8, marginBottom: 12}}>
+                  <div style={{flex: 1}}>
+                    <label style={S.lbl}>📅 Date</label>
+                    <input type="date" style={S.inp} value={saleDate} onChange={e=>setSaleDate(e.target.value)} />
+                  </div>
+                  <div style={{flex: 1}}>
+                    <label style={S.lbl}>🧾 Bill No.</label>
+                    <input type="text" style={{...S.inp, background: dark ? "#1a1d27" : "#e0e0e0"}} disabled value={getNextSlip(activeBuyer?.n)} placeholder="Auto" />
+                  </div>
+                </div>
+                
+                <div style={{marginBottom: 12}}>
+                  <label style={S.lbl}>🤝 Buyer</label>
+                  <select style={S.sel} value={buyerIdx} onChange={e=>setBuyerIdx(e.target.value)}>
+                    <option value="">— Select Buyer —</option>
+                    {[...new Set(WHOLESALERS.map(w=>w.c))].map(city => (
+                      <optgroup key={city} label={city}>
+                        {WHOLESALERS.map((w, i) => w.c === city && <option key={i} value={i}>{w.n}</option>)}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{marginBottom: 16}}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", color: withPrice ? okC : txd, fontSize: "14px", fontWeight: 700, cursor: "pointer", background: dark?"#252836":"#f0f0ec", padding: "10px", borderRadius: 8 }}>
+                    <input type="checkbox" checked={withPrice} onChange={e=>setWithPrice(e.target.checked)} style={{transform:"scale(1.2)"}} />
+                    Include prices on printed invoice
+                  </label>
+                </div>
+
+                <div style={{ fontSize: 13, fontWeight: 800, color: txd, textTransform: "uppercase", marginBottom: 8 }}>🚗 Enter Units</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: "40vh", overflowY: "auto", paddingRight: 4 }}>
+                  {DEFAULT_CARS.map((c) => {
+                    const q = carQtys[c.n] || "";
+                    const hasQ = q > 0;
+                    return (
+                      <div key={c.n} style={{ display: "flex", alignItems: "center", gap: 6, background: hasQ ? (dark?"#1b2d1b":"#eef6ee") : (dark?"#252836":"#f0f0ec"), border: `1.5px solid ${hasQ?okC:"transparent"}`, padding: "6px 8px", borderRadius: 8 }}>
+                        <div style={{ flex: 1, fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.n}</div>
+                        <input type="number" min="0" placeholder="0" value={q} onChange={e => setCarQtys({...carQtys, [c.n]: e.target.value})} style={{ width: 45, padding: "4px", borderRadius: 6, border: `1px solid ${cb}`, background: card, color: tx, textAlign: "center", fontWeight: 800 }} />
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <button onClick={handleGenerateInvoice} disabled={!activeBuyer} style={{...S.btn(okC), marginTop: 16, opacity: !activeBuyer ? 0.5 : 1}}>
+                  🖨️ GENERATE INVOICE
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: LOG */}
+          {tab === "log" && (
+            <div>
+               <div style={{padding:"12px 14px 4px",fontSize:15,fontWeight:800}}>Sales Log</div>
+               {salesLog.length === 0 && <div style={{...S.crd, textAlign:"center", color: txd}}>No sales recorded yet.</div>}
+               
+               {salesLog.map(sale => {
+                 const saleTotal = sale.items.reduce((s, it) => s + (it.qty * it.price), 0);
+                 return (
+                   <div key={sale.id} style={{...S.crd, padding: "10px 14px"}}>
+                     <div style={{display: "flex", justifyContent: "space-between", marginBottom: 6}}>
+                       <div style={{fontWeight: 800}}>{sale.wholesaler} <span style={{fontSize:12, color:txd, fontWeight:600}}>({sale.city})</span></div>
+                       <div style={{fontSize: 12, fontWeight: 800, background: cb, padding: "2px 6px", borderRadius: 4}}>{sale.slipNo}</div>
+                     </div>
+                     <div style={{fontSize: 12, color: txd, marginBottom: 8}}>{fmtD(sale.date)} • {sale.totalUnits} Units • PKR {fmt(saleTotal)}</div>
+                     
+                     <div style={{display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10}}>
+                       {sale.items.map(it => (
+                         <span key={it.name} style={{fontSize: 11, background: dark?"#252836":"#f0f0ec", padding: "2px 6px", borderRadius: 4}}>
+                           {it.name} × <b>{it.qty}</b>
+                         </span>
+                       ))}
+                     </div>
+
+                     <div style={{display: "flex", gap: 8}}>
+                       <button onClick={()=>printSlipHTML(sale)} style={{...S.btn(acc), padding: "6px", flex: 1}}>🖨️ Reprint</button>
+                       <button onClick={()=>deleteSale(sale.id)} style={{...S.btn("transparent", dnC), border: `1px solid ${dnC}`, padding: "6px", flex: 1}}>🗑️ Delete</button>
+                     </div>
+                   </div>
+                 )
+               })}
+            </div>
+          )}
+
+          {/* TAB 3: TODAY */}
+          {tab === "today" && (() => {
+            const today = todayStr();
+            const ts = salesLog.filter(s => s.date === today);
+            const totalU = ts.reduce((s,x) => s + x.totalUnits, 0);
+            const totalP = ts.reduce((s,sale) => s + sale.items.reduce((ss,it) => ss + (it.qty * it.price), 0), 0);
+            
+            const mq = {};
+            ts.forEach(s => s.items.forEach(it => { mq[it.name] = (mq[it.name]||0) + it.qty }));
+
+            return (
+              <div>
+                <div style={{padding:"12px 14px 4px",fontSize:15,fontWeight:800}}>📊 Today — {fmtD(today)}</div>
+                
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "0 12px 12px"}}>
+                  <div style={{...S.crd, margin: 0, textAlign: "center", borderTop: `4px solid ${okC}`}}>
+                    <div style={{fontSize: 11, color: txd, textTransform: "uppercase", fontWeight: 800}}>Total Units</div>
+                    <div style={{fontSize: 24, fontWeight: 900}}>{fmt(totalU)}</div>
+                  </div>
+                  <div style={{...S.crd, margin: 0, textAlign: "center", borderTop: `4px solid ${acc}`}}>
+                    <div style={{fontSize: 11, color: txd, textTransform: "uppercase", fontWeight: 800}}>Invoices</div>
+                    <div style={{fontSize: 24, fontWeight: 900}}>{ts.length}</div>
+                  </div>
+                </div>
+
+                <div style={{padding:"0 14px 10px", fontSize: 13, fontWeight: 700, color: okC}}>
+                  Total Revenue Today: PKR {fmt(totalP)}
+                </div>
+
+                {Object.keys(mq).length > 0 && (
+                  <div style={S.crd}>
+                    <div style={{fontSize: 13, fontWeight: 800, marginBottom: 10, color: txd}}>MODEL BREAKDOWN</div>
+                    <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6}}>
+                      {Object.entries(mq).sort((a,b)=>b[1]-a[1]).map(([n,q]) => (
+                        <div key={n} style={{display: "flex", justifyContent: "space-between", background: dark?"#252836":"#f0f0ec", padding: "6px 10px", borderRadius: 6}}>
+                          <span style={{fontSize: 12}}>{n}</span>
+                          <span style={{fontWeight: 800, fontSize: 13}}>{q}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {ts.length === 0 && <div style={{textAlign: "center", color: txd, padding: 20}}>No sales recorded today.</div>}
+              </div>
+            )
+          })()}
+
+          {/* TAB 4: SETTINGS */}
+          {tab === "settings" && (
+            <div>
+              <div style={{padding:"12px 14px 4px",fontSize:15,fontWeight:800}}>Settings</div>
+              
+              <div style={S.crd}>
+                <label style={S.lbl}>Data Export</label>
+                <div style={{fontSize:12,color:txd,marginBottom:10}}>Export all your sales to an Excel file.</div>
+                <button onClick={exportExcel} style={S.btn(okC)}>📥 Export to Excel</button>
+              </div>
+
+              <div style={S.crd}>
+                <label style={S.lbl}>Default Prices (PKR)</label>
+                <div style={{fontSize:12,color:txd,marginBottom:10}}>These prices are auto-applied to new invoices.</div>
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, maxHeight: "30vh", overflowY: "auto", paddingRight: 4, marginBottom: 10}}>
+                  {DEFAULT_CARS.map(c => (
+                    <div key={c.n} style={{background: dark?"#252836":"#f0f0ec", padding: "6px 8px", borderRadius: 6}}>
+                      <div style={{fontSize: 11, fontWeight: 700, marginBottom: 2}}>{c.n}</div>
+                      <input type="number" value={prices[c.n] || c.p} onChange={e => {
+                        const np = {...prices, [c.n]: parseInt(e.target.value)||0 };
+                        setPrices(np);
+                        saveToLocal(salesLog, np);
+                      }} style={{...S.inp, padding: "4px", fontSize: 13, fontWeight: 800, textAlign: "right"}} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{...S.crd, borderColor: dnC, borderWidth: 2}}>
+                <label style={{...S.lbl, color: dnC}}>Security</label>
+                <button onClick={handleLogout} style={{...S.btn("transparent", tx), border: `1px solid ${cb}`, marginTop: 8}}>🔒 Log Out & Lock App</button>
+              </div>
+            </div>
+          )}
+
+
+          {/* BOTTOM NAV */}
+          <nav style={S.nav}>
+            {[
+              {k:"entry", i:"📝", l:"New Sale"},
+              {k:"log", i:"📋", l:"Sales Log"},
+              {k:"today", i:"📊", l:"Today"},
+              {k:"settings", i:"⚙️", l:"Settings"}
+            ].map(n=>(
+              <button key={n.k} onClick={()=>setTab(n.k)} style={S.nI(tab===n.k)}>
+                <span style={{fontSize:20}}>{n.i}</span>{n.l}
+              </button>
+            ))}
+          </nav>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
