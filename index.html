@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⭐ Little Star — Sales & Invoice</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;min-height:100vh}
+
+/* NAV */
+.topnav{background:#1a1a2e;display:flex;align-items:center;padding:0 24px;height:56px;gap:8px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:50}
+.brand{font-size:17px;font-weight:800;color:#fff;letter-spacing:1px;margin-right:22px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.tab{padding:8px 18px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+.tab-off{background:transparent;color:rgba(255,255,255,.4)}
+.tab-off:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8)}
+.tab-on{background:rgba(255,255,255,.12);color:#fff}
+.nav-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.nbtn-sm{padding:7px 15px;border-radius:7px;border:1.5px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.7);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.nbtn-sm:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.35)}
+.nbtn-sm:disabled{opacity:.3;cursor:not-allowed}
+.badge{background:#4caf50;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:9px;margin-left:4px}
+.sync-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle}
+.sync-online{background:#4caf50;box-shadow:0 0 6px #4caf50}
+.sync-offline{background:#f44336;box-shadow:0 0 6px #f44336}
+.hidden{display:none!important}
+
+/* ENTRY */
+.entry-wrap{margin:14px auto;padding:0 20px;max-width:1440px}
+.entry-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 5px 30px rgba(0,0,0,.2)}
+.entry-top{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.entry-top h2{color:#fff;font-size:18px;font-weight:800;margin:0;white-space:nowrap}
+.entry-top-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.price-check{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .15s;user-select:none}
+.price-check:hover{background:rgba(255,255,255,.14)}
+.price-check input{width:17px;height:17px;cursor:pointer;accent-color:#4caf50}
+.price-check span{color:rgba(255,255,255,.5);font-size:13px;font-weight:600;transition:color .15s}
+.price-check.active span{color:#4caf50}
+.btn-gen{padding:11px 34px;border:none;border-radius:9px;background:#4caf50;color:#fff;font-size:15px;font-weight:800;letter-spacing:.3px;cursor:pointer;font-family:inherit;text-transform:uppercase;transition:all .2s;white-space:nowrap}
+.btn-gen:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 15px rgba(76,175,80,.4)}
+.btn-gen:disabled{opacity:.3;cursor:not-allowed}
+.btn-today{padding:7px 14px;border:1.5px solid #e0e0e8;border-radius:7px;background:#eef6ee;color:#2e7d32;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.btn-today:hover{background:#c8e6c9;border-color:#4caf50}
+.entry-body{padding:16px 22px}
+.meta-row{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.meta-row .fld{flex:1;min-width:170px}
+.fld label{display:block;font-size:11px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.fld input,.fld select{width:100%;padding:10px 12px;border:1.5px solid #e0e0e8;border-radius:8px;font-size:14px;font-family:inherit;outline:none;background:#fafafd;transition:border .2s}
+.fld input:focus,.fld select:focus{border-color:#1a1a2e;background:#fff}
+.fld input[readonly]{background:#eee;color:#666}
+.date-nice{font-size:12px;color:#888;margin-top:2px}
+.date-row{display:flex;gap:8px;align-items:end}
+.date-row .fld{flex:1}
+.sec-title{font-size:12px;font-weight:800;color:#1a1a2e;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #1a1a2e}
+.car-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:calc(100vh - 300px);overflow-y:auto;padding-right:4px}
+.car-grid::-webkit-scrollbar{width:5px}
+.car-grid::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+.cr{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#f6f6fb;border:1.5px solid transparent;transition:all .1s}
+.cr.active{background:#eef6ee;border-color:#4caf50}
+.cr.focused{box-shadow:0 0 0 2px rgba(26,26,46,.25);border-color:#1a1a2e}
+.cr .cname{flex:1;font-size:13.5px;font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr input{width:62px;padding:7px;border:1.5px solid #ddd;border-radius:6px;text-align:center;font-size:14px;font-weight:600;font-family:inherit;outline:none}
+.cr input:focus{border-color:#1a1a2e;box-shadow:0 0 0 2px rgba(26,26,46,.1)}
+
+/* PRINT - LANDSCAPE */
+.print-wrap{padding:18px;display:flex;flex-direction:column;align-items:center}
+.print-actions{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;justify-content:center}
+.print-actions button{padding:10px 26px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:all .15s}
+.pbtn{background:#1a1a2e;color:#fff}
+.pbtn:hover{background:#2d2d50}
+.nbtn{background:#fff;color:#1a1a2e;border:2px solid #1a1a2e!important}
+.nbtn:hover{background:#f0f0f5}
+
+/* A4 Landscape */
+.a4{width:297mm;background:#fff;box-shadow:0 3px 20px rgba(0,0,0,.15);border-radius:3px;overflow:hidden}
+.invoice-copies{display:flex;width:100%;min-height:210mm}
+.invoice-copy{width:50%;padding:8mm 12mm 8mm;position:relative;overflow:hidden;border-right:2px dashed #bbb;display:flex;flex-direction:column}
+.invoice-copy:last-child{border-right:none;border-left:2px dashed #bbb}
+.copy-badge{text-align:center;font-size:12pt;font-weight:800;color:#000;background:#fff;padding:3px 15px;border:3px solid #000;text-transform:uppercase;letter-spacing:2px;margin-bottom:3mm}
+.inv-hdr{text-align:center;margin-bottom:3mm;display:flex;align-items:center;justify-content:center;gap:4mm}
+.inv-logo{width:14mm;height:auto}
+.inv-hdr-text h1{font-size:20pt;font-weight:800;color:#1a1a2e;letter-spacing:3px;text-transform:uppercase;margin:0}
+.inv-hdr-text .tagline{font-size:8pt;color:#888;margin:1mm 0 0;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+.inv-sep{height:2px;background:linear-gradient(90deg,transparent,#1a1a2e,transparent);margin:2.5mm 0}
+.inv-meta{display:grid;grid-template-columns:1fr 1fr;gap:2mm 8mm;margin-bottom:4mm;padding:3mm 4mm;background:#f4f4fa;border-radius:2mm;border:1px solid #e0e0e8}
+.inv-mi{display:flex;gap:2mm;font-size:10pt;font-weight:600}
+.inv-mi b{color:#1a1a2e;min-width:20mm;font-weight:800}
+.inv-mi span{color:#333;font-weight:700}
+.inv-table-wrap{flex:1;display:flex;flex-direction:column}
+.inv-table{width:100%;border-collapse:collapse;font-size:9pt;font-weight:600}
+.inv-table th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.inv-table td{padding:1.8mm 3mm;border-bottom:.5px solid #ddd;font-weight:600}
+.inv-table tr:nth-child(even) td{background:#f8f8fc}
+.inv-table .trow td{border-top:2.5px solid #1a1a2e;font-weight:800;font-size:10pt;background:#e8e8f8!important;color:#1a1a2e;border-bottom:none}
+.r{text-align:right!important}.c{text-align:center!important}
+
+
+/* LOG */
+.log-wrap{max-width:1200px;margin:18px auto;padding:0 20px}
+.filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:end}
+.filters .fld{flex:1;min-width:140px}
+.filters .fld input,.filters .fld select{padding:9px 10px;font-size:13px;background:#1e1e35;border:1.5px solid rgba(255,255,255,.12);color:#fff;border-radius:7px}
+.filters .fld input:focus,.filters .fld select:focus{border-color:rgba(255,255,255,.4)}
+.filters .fld select option{background:#1e1e35;color:#fff}
+.filters .fld label{color:rgba(255,255,255,.5);font-size:10.5px}
+.fbtn{padding:8px 16px;border-radius:7px;border:1.5px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:1px}
+.fbtn:hover{border-color:rgba(255,255,255,.3);color:#fff}
+.month-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.mpill{padding:7px 14px;border-radius:7px;border:1.5px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.4);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.mpill:hover{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.7)}
+.mpill.active{background:rgba(76,175,80,.2);border-color:#4caf50;color:#4caf50}
+.log-empty{text-align:center;color:rgba(255,255,255,.3);padding:40px 20px;font-size:16px}
+.log-stats{color:rgba(255,255,255,.55);font-size:13.5px;font-weight:600;margin-bottom:12px}
+.log-card{background:#fff;border-radius:11px;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.log-head{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;background:#f8f8fc;border-bottom:1px solid #eee;flex-wrap:wrap;gap:6px}
+.lh-left{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ldate{font-weight:700;font-size:14px;color:#1a1a2e}
+.lwho{font-size:13.5px;color:#555}
+.lslip{font-size:12.5px;color:#1a1a2e;background:#e0e0f0;padding:3px 10px;border-radius:5px;font-weight:800;letter-spacing:.5px}
+.lunits{font-size:12.5px;font-weight:700;color:#1a1a2e;background:#e8f5e9;padding:2px 9px;border-radius:4px}
+.lprice-tag{font-size:11.5px;font-weight:600;color:#e67e22;background:#fef5e7;padding:2px 8px;border-radius:4px}
+.ltotal-price{font-size:12px;font-weight:700;color:#2e7d32;background:#e8f5e9;padding:2px 9px;border-radius:4px}
+.lh-right{display:flex;gap:5px;align-items:center}
+.lbtn{padding:5px 12px;border-radius:6px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;transition:all .1s}
+.lbtn:hover{background:#f0f0f5}
+.lbtn-del{color:#d32f2f;border-color:#f5c6c6}
+.lbtn-del:hover{background:#fdecea}
+.log-items{padding:6px 16px 10px;display:flex;flex-wrap:wrap;gap:5px}
+.log-chip{font-size:12px;background:#f0f0f8;padding:3px 10px;border-radius:5px;color:#444}
+.log-chip b{color:#1a1a2e}
+.pager{display:flex;justify-content:center;gap:8px;margin-top:16px}
+.pager button{padding:7px 18px;border-radius:7px;border:1.5px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.pager button:hover{background:rgba(255,255,255,.06);color:#fff}
+.pager button:disabled{opacity:.3;cursor:not-allowed}
+.pager span{color:rgba(255,255,255,.4);font-size:12px;padding:6px 10px}
+
+/* DAILY SUMMARY */
+.sum-wrap{max-width:1100px;margin:18px auto;padding:0 20px}
+.ds-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:16px 20px;margin-bottom:14px}
+.ds-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:10px}
+.ds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.ds-item{background:rgba(255,255,255,.04);border-radius:7px;padding:9px 10px;text-align:center}
+.ds-item .ds-name{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:2px}
+.ds-item .ds-val{font-size:17px;font-weight:800;color:#fff}
+.ds-big{background:#1a1a2e;border-radius:10px;padding:14px 20px;text-align:center;margin-bottom:14px;border:1px solid rgba(255,255,255,.08)}
+.ds-big .ds-name{font-size:12px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px}
+.ds-big .ds-val{font-size:28px;font-weight:800;color:#4caf50}
+.today-entry{background:#fff;border-radius:8px;margin-bottom:6px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.today-entry .te-left{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.today-entry .te-buyer{font-weight:700;font-size:12px;color:#1a1a2e}
+.today-entry .te-slip{font-size:10px;color:#666;background:#eee;padding:1px 6px;border-radius:3px}
+.today-entry .te-items{font-size:10.5px;color:#555}
+.today-entry .te-units{font-weight:700;font-size:12px;color:#2e7d32}
+
+/* PRICE MANAGER MODAL */
+.pm-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;max-height:420px;overflow-y:auto}
+.pm-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f6f6fb;border-radius:7px}
+.pm-row .pm-name{flex:1;font-size:13.5px;font-weight:600;color:#333}
+.pm-row .pm-old{font-size:11px;color:#999;font-weight:600}
+.pm-row input{width:100px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13.5px;font-weight:600;text-align:right;font-family:inherit;outline:none}
+.pm-row input:focus{border-color:#1a1a2e}
+.pm-row .pm-changed{border-color:#e67e22;background:#fff8f0}
+.ph-wrap{max-height:350px;overflow-y:auto}
+.ph-entry{padding:10px 12px;border-bottom:1px solid #eee}
+.ph-entry:last-child{border-bottom:none}
+.ph-date{font-size:10px;color:#888;font-weight:600;margin-bottom:4px}
+.ph-changes{display:flex;flex-wrap:wrap;gap:4px}
+.ph-chip{font-size:10.5px;padding:3px 8px;border-radius:4px;background:#f0f0f8;color:#444}
+.ph-chip b{color:#1a1a2e}
+.ph-chip .ph-old{color:#d32f2f;text-decoration:line-through;margin-right:3px}
+.ph-chip .ph-new{color:#2e7d32;font-weight:700}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal{background:#fff;border-radius:14px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.modal-hd{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
+.modal-hd h3{color:#fff;font-size:17px;font-weight:800;margin:0}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;padding:4px 8px}
+.modal-close:hover{color:#fff}
+.modal-bd{padding:20px 24px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;padding:0 24px 18px}
+.modal-actions button{padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-save{background:#1a1a2e;color:#fff;border:none}
+.btn-save:hover{background:#2d2d50}
+.btn-cancel{background:#fff;color:#555;border:2px solid #ddd}
+.btn-cancel:hover{background:#f5f5f5}
+
+.toast{position:fixed;bottom:18px;right:18px;background:#1a1a2e;color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:0 3px 16px rgba(0,0,0,.3);z-index:60;animation:toastAnim 2.5s forwards;pointer-events:none}
+@keyframes toastAnim{0%{opacity:0;transform:translateY(10px)}8%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateY(-5px)}}
+
+@media(max-width:900px){.car-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="brand"><img src="" style="width:28px;height:auto" alt="" id="navLogo"> Little Star</div>
+  <button class="tab tab-on" id="tabEntry" onclick="showView('entry')">📝 New Sale</button>
+  <button class="tab tab-off" id="tabLog" onclick="showView('log')">📋 Sales Log <span class="badge hidden" id="logBadge">0</span></button>
+  <button class="tab tab-off" id="tabSummary" onclick="showView('summary')">📊 Today</button>
+  <button class="tab tab-off" id="tabMonthly" onclick="showView('monthly')">📊 Monthly Bills</button>
+  <div class="nav-right">
+    <button class="nbtn-sm" onclick="openLedger()">📒 Ledger</button>
+    <button class="nbtn-sm" onclick="openPriceManager()">💰 Prices</button>
+    <button class="nbtn-sm" id="btnExport" disabled onclick="exportExcel()">📥 Export</button>
+    <button class="nbtn-sm" onclick="backupData()">💾 Backup</button>
+    <button class="nbtn-sm" onclick="document.getElementById('restoreFile').click()">📂 Restore</button>
+    <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
+    <button class="nbtn-sm" onclick="openSettings()">⚙️ Settings</button>
+    <span id="syncDot" class="sync-dot sync-offline" title="Checking..."></span>
+  </div>
+</div>
+
+<!-- ENTRY -->
+<div id="viewEntry" class="entry-wrap">
+  <div class="entry-card">
+    <div class="entry-top">
+      <h2>📝 Sales Entry</h2>
+      <div class="entry-top-right">
+        <label class="price-check" id="priceCheckLabel">
+          <input type="checkbox" id="priceCheck" onchange="togglePriceCheck()">
+          <span>Include prices on invoice</span>
+        </label>
+        <div class="fld cash-paid-wrap hidden" id="cashPaidWrap" style="min-width:120px">
+          <label style="color:rgba(255,255,255,.7);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">💵 Cash Paid</label>
+          <input type="number" id="inpCashPaid" min="0" placeholder="0" style="padding:6px 8px;font-size:12px;border:1.5px solid rgba(255,255,255,.2);border-radius:6px;background:rgba(255,255,255,.08);color:#fff;width:120px;font-family:inherit">
+        </div>
+        <button class="btn-gen" id="btnGenerate" disabled onclick="generateInvoice()">🖨️ GENERATE INVOICE</button>
+      </div>
+    </div>
+    <div class="entry-body">
+      <div class="meta-row">
+        <div class="date-row" style="max-width:220px">
+          <div class="fld"><label>📅 Date</label><input type="date" id="inpDate" onchange="updateDateDisplay()"><div class="date-nice" id="dateDisplay"></div></div>
+          <button class="btn-today" onclick="setToday()" title="Set to today's date" style="margin-bottom:14px">Today</button>
+        </div>
+        <div class="fld" style="max-width:140px"><label>🧾 Bill No.</label><input type="text" id="inpSlip" placeholder="Auto" readonly></div>
+        <div class="fld"><label>🤝 Buyer</label><select id="inpWholesaler" onchange="onBuyerChange()"><option value="">— Select Buyer —</option></select></div>
+        <div class="fld" style="max-width:120px"><label>📍 City</label><input type="text" id="inpCity" readonly></div>
+      </div>
+      <div class="sec-title">🚗 Enter Units <span style="font-weight:400;font-size:9px;color:#888;text-transform:none;letter-spacing:0;margin-left:8px">Use ↑↓←→ arrow keys to navigate</span></div>
+      <div class="car-grid" id="carGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT -->
+<div id="viewPrint" class="print-wrap hidden">
+  <div class="print-actions">
+    <button class="pbtn" onclick="printInvoice()">🖨️ Print Invoice</button>
+    <button class="nbtn" onclick="newSale()">+ New Sale</button>
+    <button class="nbtn" onclick="showView('log')">📋 View Log</button>
+  </div>
+  <div class="a4" id="a4Page"></div>
+</div>
+
+<!-- LOG -->
+<div id="viewLog" class="log-wrap hidden"></div>
+
+<!-- SUMMARY -->
+<div id="viewSummary" class="sum-wrap hidden"></div>
+
+<!-- MONTHLY -->
+<div id="viewMonthly" class="log-wrap hidden"></div>
+
+<!-- EDIT MODAL -->
+<div id="editModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-hd"><h3>✏️ Edit Sale</h3><button class="modal-close" onclick="closeEditModal()">✕</button></div>
+    <div class="modal-bd" id="editModalBody"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeEditModal()">Cancel</button><button class="btn-save" onclick="saveEdit()">Save Changes</button></div>
+  </div>
+</div>
+
+<!-- PRICE MANAGER MODAL -->
+<div id="priceModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-hd"><h3>💰 Price Manager</h3><button class="modal-close" onclick="closePriceManager()">✕</button></div>
+    <div class="modal-bd" id="priceModalBody"></div>
+    <div class="modal-actions">
+      <div style="flex:1;font-size:10px;color:#888">Changes apply to new sales only. Use "Update Old Entries" to change past prices.</div>
+      <button class="btn-cancel" onclick="closePriceManager()">Cancel</button>
+      <button class="btn-save" onclick="savePrices()">Save Prices</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE OLD PRICES MODAL -->
+<div id="oldPriceModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-hd"><h3>🔄 Update Old Entry Prices</h3><button class="modal-close" onclick="closeOldPriceModal()">✕</button></div>
+    <div class="modal-bd" id="oldPriceModalBody"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeOldPriceModal()">Cancel</button><button class="btn-save" onclick="applyOldPriceUpdate()">Update Prices</button></div>
+  </div>
+</div>
+
+<!-- PRICE HISTORY MODAL -->
+<div id="priceHistoryModal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hd"><h3>📜 Price Change History</h3><button class="modal-close" onclick="closePriceHistory()">✕</button></div>
+    <div class="modal-bd" id="priceHistoryBody"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closePriceHistory()">Close</button></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hd"><h3>⚙️ Settings</h3><button class="modal-close" onclick="closeSettings()">✕</button></div>
+    <div class="modal-bd" id="settingsBody">
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">🧾 Bill Number Counter</div>
+        <div style="font-size:11px;color:#666;margin-bottom:8px">Reset the bill counter at the start of each year. Bills will start from the number you set.</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="setBillStart" min="1" placeholder="1" style="padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;width:100px;font-family:inherit">
+          <button class="btn-save" onclick="applyBillReset()">Reset Bill Counter</button>
+        </div>
+        <div style="font-size:10px;color:#888;margin-top:4px" id="currentBillInfo"></div>
+      </div>
+      <div style="border-top:1.5px solid #eee;padding-top:14px">
+        <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">🔥 Firebase Config</div>
+        <div style="font-size:11px;color:#666;margin-bottom:4px">Status: <span id="fbStatus" style="font-weight:700">Checking...</span></div>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeSettings()">Close</button></div>
+  </div>
+</div>
+
+<!-- LEDGER MODAL -->
+<div id="ledgerModal" class="modal-overlay hidden">
+  <div class="modal" style="max-width:800px">
+    <div class="modal-hd"><h3>📒 Wholesaler Ledger</h3><button class="modal-close" onclick="closeLedger()">✕</button></div>
+    <div class="modal-bd" id="ledgerBody"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeLedger()">Close</button></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+// ── Firebase Config ──
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "daily-sales-c55bd.firebaseapp.com",
+  databaseURL: "https://daily-sales-c55bd-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "daily-sales-c55bd",
+  storageBucket: "daily-sales-c55bd.appspot.com",
+  messagingSenderId: "000000000",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const fbDB = firebase.database();
+const FB_REF = fbDB.ref('littlestar');
+
+// ── Offline Auto-Sync: push to Firebase when WiFi reconnects ──
+let _pendingSync=false;
+function markPendingSync(){_pendingSync=true;try{localStorage.setItem('ls_pendingSync','1')}catch(e){}}
+function clearPendingSync(){_pendingSync=false;try{localStorage.removeItem('ls_pendingSync')}catch(e){}}
+function hasPendingSync(){return _pendingSync||localStorage.getItem('ls_pendingSync')==='1'}
+function doSync(){
+  const priceData={};CAR_MODELS.forEach(c=>priceData[c.n]=c.p);
+  const ledger=getLedger();
+  const priceHistory=getPriceHistory();
+  FB_REF.set({salesLog,prices:priceData,ledger,priceHistory,lastSync:new Date().toISOString()})
+    .then(()=>{clearPendingSync();updateSyncDot();showToast('☁️ Synced to cloud!')})
+    .catch(()=>{markPendingSync();updateSyncDot()});
+}
+function updateSyncDot(){
+  const dot=document.getElementById('syncDot');
+  if(!dot)return;
+  if(navigator.onLine){dot.className='sync-dot sync-online';dot.title='Online'+(hasPendingSync()?' (syncing...)':' — synced')}
+  else{dot.className='sync-dot sync-offline';dot.title='Offline — will sync when connected'}
+}
+window.addEventListener('online',()=>{updateSyncDot();if(hasPendingSync()){showToast('📶 Back online — syncing...');doSync()}});
+window.addEventListener('offline',()=>{updateSyncDot();showToast('📴 Offline — changes saved locally')});
+
+const LOGO_BASE64='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAFPCAYAAACifBDfAAAACXBIWXMAAAsTAAALEwEAmpwYAAA57mlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMwNjcgNzkuMTU3NzQ3LCAyMDE1LzAzLzMwLTIzOjQwOjQyICAgICAgICAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICAgICAgICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgICAgICAgICB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIKICAgICAgICAgICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgICAgICAgICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj4KICAgICAgICAgPHhtcDpDcmVhdG9yVG9vbD5BZG9iZSBQaG90b3Nob3AgQ0MgMjAxNSAoV2luZG93cyk8L3htcDpDcmVhdG9yVG9vbD4KICAgICAgICAgPHhtcDpDcmVhdGVEYXRlPjIwMjEtMDItMDhUMTA6MTQ6MzUrMDU6MDA8L3htcDpDcmVhdGVEYXRlPgogICAgICAgICA8eG1wOk1vZGlmeURhdGU+MjAyMS0wMi0yMFQxMTo1NzozMSswNTowMDwveG1wOk1vZGlmeURhdGU+CiAgICAgICAgIDx4bXA6TWV0YWRhdGFEYXRlPjIwMjEtMDItMjBUMTE6NTc6MzErMDU6MDA8L3htcDpNZXRhZGF0YURhdGU+CiAgICAgICAgIDxkYzpmb3JtYXQ+aW1hZ2UvcG5nPC9kYzpmb3JtYXQ+CiAgICAgICAgIDxwaG90b3Nob3A6Q29sb3JNb2RlPjM8L3Bob3Rvc2hvcDpDb2xvck1vZGU+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5jZUlEPnhtcC5paWQ6NWMyYjkyZTMtZjNhMi1jNzRkLTlmM2UtYmZiNjM0MTY5MzQ4PC94bXBNTTpJbnN0YW5jZUlEPgogICAgICAgICA8eG1wTU06RG9jdW1lbnRJRD5hZG9iZTpkb2NpZDpwaG90b3Nob3A6ZTcyNjU2MzUtNzM0OC0xMWViLTllYjItYzk1OGE1ZjY3YzM2PC94bXBNTTpEb2N1bWVudElEPgogICAgICAgICA8eG1wTU06T3JpZ2luYWxEb2N1bWVudElEPnhtcC5kaWQ6ZWViYWRkZTEtNjdhNi02YTQ3LWFhY2UtY2FlMTk0NTBhMDYyPC94bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpIaXN0b3J5PgogICAgICAgICAgICA8cmRmOlNlcT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+Y3JlYXRlZDwvc3RFdnQ6YWN0aW9uPgogICAgICAgICAgICAgICAgICA8c3RFdnQ6aW5zdGFuY2VJRD54bXAuaWlkOmVlYmFkZGUxLTY3YTYtNmE0Ny1hYWNlLWNhZTE5NDUwYTA2Mjwvc3RFdnQ6aW5zdGFuY2VJRD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OndoZW4+MjAyMS0wMi0wOFQxMDoxNDozNSswNTowMDwvc3RFdnQ6d2hlbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OnNvZnR3YXJlQWdlbnQ+QWRvYmUgUGhvdG9zaG9wIENDIDIwMTUgKFdpbmRvd3MpPC9zdEV2dDpzb2Z0d2FyZUFnZW50PgogICAgICAgICAgICAgICA8L3JkZjpsaT4KICAgICAgICAgICAgICAgPHJkZjpsaSByZGY6cGFyc2VUeXBlPSJSZXNvdXJjZSI+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDphY3Rpb24+c2F2ZWQ8L3N0RXZ0OmFjdGlvbj4KICAgICAgICAgICAgICAgICAgPHN0RXZ0Omluc3RhbmNlSUQ+eG1wLmlpZDo1YzJiOTJlMy1mM2EyLWM3NGQtOWYzZS1iZmI2MzQxNjkzNDg8L3N0RXZ0Omluc3RhbmNlSUQ+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDp3aGVuPjIwMjEtMDItMjBUMTE6NTc6MzErMDU6MDA8L3N0RXZ0OndoZW4+CiAgICAgICAgICAgICAgICAgIDxzdEV2dDpzb2Z0d2FyZUFnZW50PkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE1IChXaW5kb3dzKTwvc3RFdnQ6c29mdHdhcmVBZ2VudD4KICAgICAgICAgICAgICAgICAgPHN0RXZ0OmNoYW5nZWQ+Lzwvc3RFdnQ6Y2hhbmdlZD4KICAgICAgICAgICAgICAgPC9yZGY6bGk+CiAgICAgICAgICAgIDwvcmRmOlNlcT4KICAgICAgICAgPC94bXBNTTpIaXN0b3J5PgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8dGlmZjpYUmVzb2x1dGlvbj43MjAwMDAvMTAwMDA8L3RpZmY6WFJlc29sdXRpb24+CiAgICAgICAgIDx0aWZmOllSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6UmVzb2x1dGlvblVuaXQ+MjwvdGlmZjpSZXNvbHV0aW9uVW5pdD4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT42NTUzNTwvZXhpZjpDb2xvclNwYWNlPgogICAgICAgICA8ZXhpZjpQaXhlbFhEaW1lbnNpb24+MjU2PC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjMzNTwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgIAo8P3hwYWNrZXQgZW5kPSJ3Ij8+zH0/uAAAACBjSFJNAAB6JQAAgIMAAPn/AACA6QAAdTAAAOpgAAA6mAAAF2+SX8VGAAAfWElEQVR42uydeZQb1Z3vP9U2BEhwq8y+WmzzTiYvWBMnsQHjVgY7YcnDfSBmmCQvFiSBkzdM3MlMng3MG0QC2GazHLawWjZgwA5YDszJDCEPdQIEAwY12TjDpk4yyQSYlhoIEOyuO39UqVtut+1WqyRVqb6fc3TU6m6Vbt1bv8/93VtXVZYxBiGazeA35ySBOA5xDHFjiOOAMYBDAWPKDJHHoWDf/tOyaqwxWBKAaErAL5mTwNCNIYlDF473Bwcww4E//IwxMOT9PESvcUx26prHsqpJCUCEiDcv7ooZY3I4dGHcYMfxHuMXAMYxMEQ/Dj1T73ksp5qVAETQg///dcVxyBljplcCvU4BVF6vNg49+3z/MQ0NJAAR0OBPAHkcOo0x+CwAjEMfQyT32SAJ1EOHqkD4HvyXeMEPnQ38mOmAhgISgAhU8Ke7UsBzDQ7+Cl1vnD47o1qXAEQQgv/byRSwqskf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';
+
+const MONTH_NAMES=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+let CAR_MODELS=[{n:"Sprinter",p:2750},{n:"Stroller",p:2400},{n:"Twilight",p:2000},{n:"Super Tolo",p:1750},{n:"Swift Rider",p:1350},{n:"Sparkle",p:1550},{n:"Panda",p:1800},{n:"Mercedese",p:1700},{n:"Mic Cruiser",p:2850},{n:"Sunflower",p:1800},{n:"Rainbow",p:1900},{n:"3D",p:1150},{n:"Classic",p:1500},{n:"Crystal",p:1700},{n:"Duckling",p:2000},{n:"Jaguar",p:1400},{n:"Jungle",p:1300},{n:"Mick. Mouse",p:2050},{n:"Mick. Rider",p:2200},{n:"Minion",p:2150},{n:"Skyjet",p:1550}];
+
+const savedPrices=(()=>{try{const v=localStorage.getItem('ls_prices');return v?JSON.parse(v):null}catch(e){return null}})();
+if(savedPrices){CAR_MODELS.forEach(c=>{if(savedPrices[c.n]!==undefined)c.p=savedPrices[c.n]})}
+
+let PRICES={};
+function rebuildPrices(){PRICES={};CAR_MODELS.forEach(c=>PRICES[c.n]=c.p)}
+rebuildPrices();
+
+const WHOLESALERS=[
+  {n:"Khwaja",c:"Karachi"},{n:"Naqi",c:"Karachi"},{n:"Saleem",c:"Karachi"},{n:"Mairaj",c:"Karachi"},{n:"Moosa",c:"Karachi"},{n:"Umair",c:"Karachi"},{n:"Evergreen",c:"Karachi"},{n:"Noor Alam",c:"Karachi"},{n:"Irfan",c:"Karachi"},{n:"Aslam",c:"Karachi"},{n:"Ashraf",c:"Karachi"},{n:"Rajesh",c:"Karachi"},{n:"Khaleel Cycle",c:"Karachi"},{n:"Shamshad",c:"Karachi"},{n:"Hamza Col",c:"Karachi"},{n:"PVT",c:"Karachi"},{n:"Tanzeel",c:"Karachi"},{n:"Super Cycle",c:"Karachi"},{n:"Memon Cycle",c:"Karachi"},{n:"Mudassir",c:"Karachi"},{n:"Usman Aziz",c:"Karachi"},{n:"Shandar Cycle",c:"Karachi"},{n:"Alkaswa",c:"Karachi"},
+  {n:"Faisal Digri",c:"Sindh"},{n:"Raja Bright",c:"Sindh"},{n:"Fancy Cycle",c:"Sindh"},{n:"Ghousia Digri",c:"Sindh"},
+  {n:"A1 Lahore",c:"Punjab"},{n:"Farhan Yousuf",c:"Punjab"},{n:"Fahad Lahore",c:"Punjab"},{n:"Talat Sialkot",c:"Punjab"},{n:"Pak Punjab",c:"Punjab"},{n:"Aslam Cycle",c:"Punjab"},{n:"Imran Cycle",c:"Punjab"},{n:"Abdul Hafeez",c:"Punjab"},{n:"Khurram Pindi",c:"Punjab"},{n:"Aslam Cycle 2",c:"Punjab"},{n:"Sheikhpura",c:"Punjab"},{n:"Fine Cycle",c:"Punjab"},{n:"Dilawar But",c:"Punjab"},{n:"Khurram Pindi 2",c:"Punjab"},
+  {n:"Quetta Khalid",c:"Balochistan"},{n:"Mudassir 2",c:"Balochistan"},
+  {n:"Umer Cycle",c:"KPK"},{n:"Ayaz Banaras",c:"KPK"},{n:"Irfan Mangora",c:"KPK"},{n:"Mardan",c:"KPK"}
+];
+
+const DB={_m:{},get(k){try{const v=localStorage.getItem('ls_'+k);return v?JSON.parse(v):null}catch(e){return this._m[k]||null}},set(k,v){try{localStorage.setItem('ls_'+k,JSON.stringify(v))}catch(e){this._m[k]=v}}};
+let salesLog=DB.get('salesLog')||[];
+let currentSale=null;let editingSaleId=null;let logPage=0;let logMonth='';const PAGE_SIZE=50;
+
+let _fbTimer=null;
+function save(){
+  DB.set('salesLog',salesLog);
+  clearTimeout(_fbTimer);
+  _fbTimer=setTimeout(()=>{
+    if(navigator.onLine){doSync()}
+    else{markPendingSync();updateSyncDot();showToast('💾 Saved locally (offline)')}
+  },3000);
+}
+const fmt=n=>(n||0).toLocaleString('en-PK');
+
+// DD-MM-YYYY format
+function fmtD(d){
+  try{const dt=new Date(d+'T00:00:00');
+  const dd=String(dt.getDate()).padStart(2,'0');
+  const mm=String(dt.getMonth()+1).padStart(2,'0');
+  return dd+'/'+mm+'/'+dt.getFullYear();
+  }catch(e){return d}
+}
+function todayStr(){return new Date().toISOString().split('T')[0]}
+function fmtTime(d){try{const dt=d?new Date(d):new Date();let h=dt.getHours();const m=String(dt.getMinutes()).padStart(2,'0');const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+' '+ap}catch(e){return''}}
+function nowTimeStr(){return new Date().toISOString()}
+function padSlip(n){return String(n).padStart(4,'0')}
+function getNextSlip(){
+  const startNum=parseInt(localStorage.getItem('ls_billStart'))||1;
+  if(!salesLog.length)return padSlip(startNum);
+  let mx=0;
+  salesLog.forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});
+  return padSlip(Math.max(mx+1,startNum));
+}
+// ── Settings ──
+function openSettings(){
+  const cur=parseInt(localStorage.getItem('ls_billStart'))||1;
+  document.getElementById('setBillStart').value=cur;
+  let mx=0;salesLog.forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});
+  document.getElementById('currentBillInfo').textContent='Current highest bill: '+padSlip(mx)+' | Next bill: '+padSlip(Math.max(mx+1,cur));
+  try{document.getElementById('fbStatus').textContent=firebase.app()?'Connected':'Not configured';document.getElementById('fbStatus').style.color='#4caf50'}catch(e){document.getElementById('fbStatus').textContent='Not configured';document.getElementById('fbStatus').style.color='#f44336'}
+  document.getElementById('settingsModal').classList.remove('hidden');
+}
+function closeSettings(){document.getElementById('settingsModal').classList.add('hidden')}
+function applyBillReset(){
+  const n=parseInt(document.getElementById('setBillStart').value)||1;
+  localStorage.setItem('ls_billStart',n);
+  openSettings();
+  showToast('🔄 Bills will start from '+padSlip(n));
+}
+
+// ── Wholesaler Ledger ──
+function getLedger(){try{return JSON.parse(localStorage.getItem('ls_ledger'))||{}}catch(e){return{}}}
+function saveLedger(ledger){try{localStorage.setItem('ls_ledger',JSON.stringify(ledger))}catch(e){}}
+
+function openLedger(){
+  const ledger=getLedger();
+  const allWho=[...new Set(salesLog.map(s=>s.wholesaler))].sort();
+  let html='<div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn-save" style="font-size:11px;padding:6px 14px" onclick="addPayment()">+ Add Payment</button><button class="btn-save" style="font-size:11px;padding:6px 14px;background:#e67e22" onclick="printLedgerSummary()">🖨️ Print All Balances</button></div>';
+
+  html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html+='<thead><tr style="background:#1a1a2e;color:#fff"><th style="padding:8px 10px;text-align:left">Wholesaler</th><th style="padding:8px 10px;text-align:right">Total Sales</th><th style="padding:8px 10px;text-align:right">Cash Paid (Bills)</th><th style="padding:8px 10px;text-align:right">Extra Payments</th><th style="padding:8px 10px;text-align:right">Total Paid</th><th style="padding:8px 10px;text-align:right;font-weight:800">Balance</th><th style="padding:8px 10px;text-align:center">Actions</th></tr></thead><tbody>';
+
+  let grandSales=0,grandPaid=0;
+  allWho.forEach(who=>{
+    const sales=salesLog.filter(s=>s.wholesaler===who);
+    const totalSales=sales.reduce((s,sale)=>s+sale.items.reduce((ss,it)=>ss+(it.qty*getItemPrice(it)),0),0);
+    const cashFromBills=sales.reduce((s,sale)=>s+(sale.cashPaid||0),0);
+    const payments=(ledger[who]||[]).reduce((s,p)=>s+p.amount,0);
+    const totalPaid=cashFromBills+payments;
+    const balance=totalSales-totalPaid;
+    grandSales+=totalSales;grandPaid+=totalPaid;
+
+    html+='<tr style="border-bottom:1px solid #eee'+(balance>0?';background:#fff5f5':'')+'"><td style="padding:7px 10px;font-weight:700">'+who+'</td><td style="padding:7px 10px;text-align:right">'+fmt(totalSales)+'</td><td style="padding:7px 10px;text-align:right">'+fmt(cashFromBills)+'</td><td style="padding:7px 10px;text-align:right">'+fmt(payments)+'</td><td style="padding:7px 10px;text-align:right;font-weight:700">'+fmt(totalPaid)+'</td><td style="padding:7px 10px;text-align:right;font-weight:800;color:'+(balance>0?'#d32f2f':'#2e7d32')+'">'+fmt(Math.abs(balance))+(balance>0?' Due':balance<0?' CR':'')+'</td><td style="padding:7px 10px;text-align:center"><button class="lbtn" onclick="viewLedgerDetail(\''+who.replace(/'/g,"\\'")+'\')">📋</button></td></tr>';
+  });
+
+  const grandBal=grandSales-grandPaid;
+  html+='<tr style="background:#f0f0f8;border-top:2px solid #1a1a2e"><td style="padding:8px 10px;font-weight:800">TOTAL</td><td style="padding:8px 10px;text-align:right;font-weight:800">'+fmt(grandSales)+'</td><td colspan="2"></td><td style="padding:8px 10px;text-align:right;font-weight:800">'+fmt(grandPaid)+'</td><td style="padding:8px 10px;text-align:right;font-weight:800;color:'+(grandBal>0?'#d32f2f':'#2e7d32')+'">'+fmt(Math.abs(grandBal))+(grandBal>0?' Due':'')+'</td><td></td></tr>';
+  html+='</tbody></table></div>';
+
+  document.getElementById('ledgerBody').innerHTML=html;
+  document.getElementById('ledgerModal').classList.remove('hidden');
+}
+function closeLedger(){document.getElementById('ledgerModal').classList.add('hidden')}
+
+function addPayment(){
+  const allWho=[...new Set(salesLog.map(s=>s.wholesaler))].sort();
+  const whoOpts=allWho.map(w=>'<option value="'+w+'">'+w+'</option>').join('');
+  document.getElementById('ledgerBody').innerHTML='<div style="max-width:400px"><div style="font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:12px">+ Record Payment</div><div class="fld" style="margin-bottom:10px"><label>🤝 Wholesaler</label><select id="payWho" style="width:100%;padding:8px;font-size:13px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit"><option value="">— Select —</option>'+whoOpts+'</select></div><div class="fld" style="margin-bottom:10px"><label>💵 Amount (PKR)</label><input type="number" id="payAmt" min="0" placeholder="0" style="width:100%;padding:8px;font-size:13px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit"></div><div class="fld" style="margin-bottom:10px"><label>📅 Date</label><input type="date" id="payDate" value="'+todayStr()+'" style="width:100%;padding:8px;font-size:13px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit"></div><div class="fld" style="margin-bottom:14px"><label>📝 Note</label><input type="text" id="payNote" placeholder="e.g. Bank transfer, Cash" style="width:100%;padding:8px;font-size:13px;border:1.5px solid #ddd;border-radius:6px;font-family:inherit"></div><div style="display:flex;gap:8px"><button class="btn-save" onclick="savePayment()">Save Payment</button><button class="btn-cancel" onclick="openLedger()">Cancel</button></div></div>';
+}
+
+function savePayment(){
+  const who=document.getElementById('payWho').value;
+  const amt=parseInt(document.getElementById('payAmt').value)||0;
+  const date=document.getElementById('payDate').value;
+  const note=document.getElementById('payNote').value;
+  if(!who){alert('Select a wholesaler');return}
+  if(!amt){alert('Enter an amount');return}
+  const ledger=getLedger();
+  if(!ledger[who])ledger[who]=[];
+  ledger[who].push({id:Date.now(),amount:amt,date:date,note:note});
+  saveLedger(ledger);
+  save();
+  openLedger();
+  showToast('💵 Payment of PKR '+fmt(amt)+' recorded for '+who);
+}
+
+function viewLedgerDetail(who){
+  const ledger=getLedger();
+  const payments=ledger[who]||[];
+  const sales=salesLog.filter(s=>s.wholesaler===who);
+  const totalSales=sales.reduce((s,sale)=>s+sale.items.reduce((ss,it)=>ss+(it.qty*getItemPrice(it)),0),0);
+  const cashFromBills=sales.reduce((s,sale)=>s+(sale.cashPaid||0),0);
+  const extraPaid=payments.reduce((s,p)=>s+p.amount,0);
+  const balance=totalSales-cashFromBills-extraPaid;
+
+  let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:14px;font-weight:800;color:#1a1a2e">📋 '+who+' — Ledger Detail</div><button class="btn-cancel" style="font-size:10px;padding:4px 10px" onclick="openLedger()">← Back</button></div>';
+
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px">';
+  html+='<div style="background:#f4f4fa;padding:10px;border-radius:8px;text-align:center"><div style="font-size:9px;color:#888;text-transform:uppercase;font-weight:700">Total Sales</div><div style="font-size:16px;font-weight:800;color:#1a1a2e">'+fmt(totalSales)+'</div></div>';
+  html+='<div style="background:#f4f4fa;padding:10px;border-radius:8px;text-align:center"><div style="font-size:9px;color:#888;text-transform:uppercase;font-weight:700">Paid (Bills)</div><div style="font-size:16px;font-weight:800;color:#1a1a2e">'+fmt(cashFromBills)+'</div></div>';
+  html+='<div style="background:#f4f4fa;padding:10px;border-radius:8px;text-align:center"><div style="font-size:9px;color:#888;text-transform:uppercase;font-weight:700">Extra Payments</div><div style="font-size:16px;font-weight:800;color:#1a1a2e">'+fmt(extraPaid)+'</div></div>';
+  html+='<div style="background:'+(balance>0?'#fff5f5':'#f0fff0')+';padding:10px;border-radius:8px;text-align:center;border:2px solid '+(balance>0?'#f44336':'#4caf50')+'"><div style="font-size:9px;color:#888;text-transform:uppercase;font-weight:700">'+(balance>0?'Balance Due':'Credit')+'</div><div style="font-size:16px;font-weight:800;color:'+(balance>0?'#d32f2f':'#2e7d32')+'">'+fmt(Math.abs(balance))+'</div></div>';
+  html+='</div>';
+
+  if(payments.length){
+    html+='<div style="font-size:11px;font-weight:800;color:#1a1a2e;margin-bottom:6px">Extra Payments</div>';
+    html+='<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px"><thead><tr style="background:#1a1a2e;color:#fff"><th style="padding:6px 8px;text-align:left">Date</th><th style="padding:6px 8px;text-align:right">Amount</th><th style="padding:6px 8px;text-align:left">Note</th><th style="padding:6px 8px;text-align:center">Del</th></tr></thead><tbody>';
+    payments.sort((a,b)=>a.date>b.date?-1:1).forEach(p=>{
+      html+='<tr style="border-bottom:1px solid #eee"><td style="padding:5px 8px">'+fmtD(p.date)+'</td><td style="padding:5px 8px;text-align:right;font-weight:700">PKR '+fmt(p.amount)+'</td><td style="padding:5px 8px;color:#666">'+( p.note||'-')+'</td><td style="padding:5px 8px;text-align:center"><button class="lbtn lbtn-del" onclick="deletePayment(\''+who.replace(/'/g,"\\'")+'\','+p.id+')">✕</button></td></tr>';
+    });
+    html+='</tbody></table>';
+  }
+
+  html+='<div style="font-size:11px;font-weight:800;color:#1a1a2e;margin-bottom:6px">Recent Sales</div>';
+  const recent=sales.slice(-10).reverse();
+  recent.forEach(sale=>{
+    const saleTotal=sale.items.reduce((s,it)=>s+(it.qty*getItemPrice(it)),0);
+    const chips=sale.items.map(it=>'<span class="log-chip">'+it.name+' × <b>'+it.qty+'</b></span>').join('');
+    html+='<div style="background:#f8f8fc;border-radius:6px;padding:8px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-weight:700;font-size:11px">'+fmtD(sale.date)+'</span>'+(sale.slipNo?'<span class="lslip" style="font-size:9px">'+sale.slipNo+'</span>':'')+'<span style="font-size:10px;color:#555">'+chips+'</span></div><div style="display:flex;gap:8px;align-items:center"><span style="font-weight:700;font-size:11px">PKR '+fmt(saleTotal)+'</span>'+(sale.cashPaid?'<span style="font-size:10px;color:#2e7d32">Paid: '+fmt(sale.cashPaid)+'</span>':'')+'</div></div>';
+  });
+  if(sales.length>10)html+='<div style="text-align:center;font-size:10px;color:#888;margin-top:6px">Showing last 10 of '+sales.length+' sales</div>';
+
+  document.getElementById('ledgerBody').innerHTML=html;
+}
+
+function deletePayment(who,id){
+  if(!confirm('Delete this payment?'))return;
+  const ledger=getLedger();
+  if(ledger[who])ledger[who]=ledger[who].filter(p=>p.id!==id);
+  saveLedger(ledger);
+  save();
+  viewLedgerDetail(who);
+  showToast('🗑️ Payment deleted');
+}
+
+function printLedgerSummary(){
+  const ledger=getLedger();
+  const allWho=[...new Set(salesLog.map(s=>s.wholesaler))].sort();
+  let rows='',grandSales=0,grandPaid=0;
+  allWho.forEach((who,i)=>{
+    const sales=salesLog.filter(s=>s.wholesaler===who);
+    const totalSales=sales.reduce((s,sale)=>s+sale.items.reduce((ss,it)=>ss+(it.qty*getItemPrice(it)),0),0);
+    const cashFromBills=sales.reduce((s,sale)=>s+(sale.cashPaid||0),0);
+    const payments=(ledger[who]||[]).reduce((s,p)=>s+p.amount,0);
+    const totalPaid=cashFromBills+payments;
+    const balance=totalSales-totalPaid;
+    grandSales+=totalSales;grandPaid+=totalPaid;
+    rows+='<tr><td class="c">'+(i+1)+'</td><td>'+who+'</td><td class="r">'+fmt(totalSales)+'</td><td class="r">'+fmt(totalPaid)+'</td><td class="r" style="font-weight:800;color:'+(balance>0?'red':'green')+'">'+fmt(Math.abs(balance))+(balance>0?' Due':balance<0?' CR':'')+'</td></tr>';
+  });
+  const grandBal=grandSales-grandPaid;
+  const w=window.open('','_blank','width=800,height=600');
+  w.document.write('<!DOCTYPE html><html><head><title>All Balances</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet"><style>@page{size:A4 portrait;margin:10mm}*{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans",sans-serif}body{padding:10mm}h1{font-size:18pt;font-weight:800;text-align:center;margin-bottom:2mm}.sub{text-align:center;font-size:9pt;color:#666;margin-bottom:6mm}.sep{height:2px;background:#000;margin:4mm 0}table{width:100%;border-collapse:collapse;font-size:9pt}th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase}td{padding:2mm 3mm;border-bottom:.5px solid #ddd;font-weight:600}tr:nth-child(even) td{background:#f8f8fc}.trow td{border-top:2px solid #000;font-weight:800;font-size:10pt;background:#e8e8f8!important}.r{text-align:right}.c{text-align:center}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><h1>Little Star</h1><div class="sub">Wholesaler Balance Summary — '+fmtD(todayStr())+'</div><div class="sep"></div><table><thead><tr><th class="c">#</th><th>Wholesaler</th><th class="r">Total Sales</th><th class="r">Total Paid</th><th class="r">Balance</th></tr></thead><tbody>'+rows+'<tr class="trow"><td></td><td>GRAND TOTAL</td><td class="r">PKR '+fmt(grandSales)+'</td><td class="r">PKR '+fmt(grandPaid)+'</td><td class="r" style="color:'+(grandBal>0?'red':'green')+'">PKR '+fmt(Math.abs(grandBal))+(grandBal>0?' Due':'')+'</td></tr></tbody></table></body></html>');
+  w.document.close();w.focus();setTimeout(()=>{w.print();w.close()},500);
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.className='toast';setTimeout(()=>t.classList.add('hidden'),2500)}
+function getGridCols(){const grid=document.getElementById('carGrid');if(!grid)return 4;return getComputedStyle(grid).gridTemplateColumns.split(' ').length}
+
+function setToday(){document.getElementById('inpDate').value=todayStr();updateDateDisplay()}
+
+function init(){
+  document.getElementById('navLogo').src=LOGO_BASE64;
+  document.getElementById('inpDate').value=todayStr();updateDateDisplay();
+  const sel=document.getElementById('inpWholesaler');
+  const cities=[...new Set(WHOLESALERS.map(w=>w.c))];
+  cities.forEach(city=>{const grp=document.createElement('optgroup');grp.label=city;WHOLESALERS.forEach((w,i)=>{if(w.c===city){const o=document.createElement('option');o.value=i;o.textContent=w.n;grp.appendChild(o)}});sel.appendChild(grp)});
+  const grid=document.getElementById('carGrid');
+  CAR_MODELS.forEach((car,i)=>{const d=document.createElement('div');d.className='cr';d.id='cr-'+i;d.innerHTML='<span class="cname">'+car.n+'</span><input type="number" min="0" placeholder="0" id="qty-'+i+'" oninput="onQtyChange('+i+')" onfocus="onQtyFocus('+i+')" onblur="onQtyBlur('+i+')" onkeydown="onQtyKey(event,'+i+')">';grid.appendChild(d)});
+  updateBadge();updateSyncDot();
+  ENTRY_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',entryFieldKey)});
+  // Auto-sync pending changes on startup
+  if(navigator.onLine&&hasPendingSync()){setTimeout(()=>doSync(),2000)}
+  // Firebase pull on load
+  FB_REF.once('value').then(snap=>{
+    const d=snap.val();
+    if(d&&d.salesLog&&d.salesLog.length>salesLog.length){
+      if(confirm('Cloud has '+d.salesLog.length+' sales (local: '+salesLog.length+'). Pull from cloud?')){
+        salesLog=d.salesLog;DB.set('salesLog',salesLog);
+        if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}
+        if(d.ledger){saveLedger(d.ledger)}
+        updateBadge();showToast('⬇️ Pulled from cloud!');
+      }
+    }
+  }).catch(e=>console.log('Firebase pull failed:',e));
+}
+
+function updateDateDisplay(){const v=document.getElementById('inpDate').value;document.getElementById('dateDisplay').textContent=v?fmtD(v)+' • '+fmtTime():'';document.getElementById('inpSlip').value=getNextSlip()}
+function onBuyerChange(){const idx=document.getElementById('inpWholesaler').value;if(idx!==''){const w=WHOLESALERS[parseInt(idx)];document.getElementById('inpCity').value=w.c;document.getElementById('inpSlip').value=getNextSlip()}else{document.getElementById('inpCity').value='';document.getElementById('inpSlip').value=''}checkReady()}
+function onQtyChange(i){const q=parseInt(document.getElementById('qty-'+i).value)||0;document.getElementById('cr-'+i).classList.toggle('active',q>0);checkReady()}
+function onQtyFocus(i){document.getElementById('cr-'+i).classList.add('focused')}
+function onQtyBlur(i){document.getElementById('cr-'+i).classList.remove('focused')}
+// All entry fields navigation
+const ENTRY_FIELDS=['inpDate','inpSlip','inpWholesaler','inpCity'];
+function entryFieldKey(e){
+  const id=e.target.id;const idx=ENTRY_FIELDS.indexOf(id);if(idx<0)return;
+  if(e.key==='ArrowRight'||e.key==='Enter'){e.preventDefault();if(idx<ENTRY_FIELDS.length-1)document.getElementById(ENTRY_FIELDS[idx+1]).focus();else{const el=document.getElementById('qty-0');if(el){el.focus();el.select()}}}
+  else if(e.key==='ArrowLeft'){e.preventDefault();if(idx>0)document.getElementById(ENTRY_FIELDS[idx-1]).focus()}
+  else if(e.key==='ArrowDown'){e.preventDefault();const el=document.getElementById('qty-0');if(el){el.focus();el.select()}}
+}
+function onQtyKey(e,i){const cols=getGridCols();const total=CAR_MODELS.length;let target=-1;if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();target=i+cols;if(target>=total&&e.key==='Enter'){target=i+1;if(target>=total){document.getElementById('btnGenerate').focus();return}}if(target>=total)return}else if(e.key==='ArrowUp'){e.preventDefault();target=i-cols;if(target<0){document.getElementById('inpWholesaler').focus();return}}else if(e.key==='ArrowRight'){e.preventDefault();target=i+1;if(target>=total)return}else if(e.key==='ArrowLeft'){e.preventDefault();target=i-1;if(target<0)return}else{return}if(target>=0&&target<total){const el=document.getElementById('qty-'+target);if(el){el.focus();el.select()}}}
+function checkReady(){const hasW=document.getElementById('inpWholesaler').value!=='';let hasQ=false;for(let i=0;i<CAR_MODELS.length;i++){if((parseInt(document.getElementById('qty-'+i).value)||0)>0){hasQ=true;break}}document.getElementById('btnGenerate').disabled=!(hasW&&hasQ)}
+function togglePriceCheck(){const ch=document.getElementById('priceCheck');document.getElementById('priceCheckLabel').classList.toggle('active',ch.checked);document.getElementById('cashPaidWrap').classList.toggle('hidden',!ch.checked)}
+
+function generateInvoice(){const wIdx=parseInt(document.getElementById('inpWholesaler').value);const w=WHOLESALERS[wIdx];const items=[];CAR_MODELS.forEach((car,i)=>{const q=parseInt(document.getElementById('qty-'+i).value)||0;if(q>0)items.push({name:car.n,qty:q,price:car.p})});if(!items.length)return;const withPrice=document.getElementById('priceCheck').checked;const cashPaid=withPrice?(parseInt(document.getElementById('inpCashPaid').value)||0):0;const sale={id:Date.now(),date:document.getElementById('inpDate').value,time:nowTimeStr(),slipNo:document.getElementById('inpSlip').value,wholesaler:w.n,city:w.c,items,totalUnits:items.reduce((s,x)=>s+x.qty,0),withPrice,cashPaid};currentSale=sale;salesLog.push(sale);save();updateBadge();renderPrintPreview(sale);resetForm();showView('print');showToast('✅ Sale saved!');setTimeout(()=>printInvoice(),600)}
+function resetForm(){CAR_MODELS.forEach((_,i)=>{document.getElementById('qty-'+i).value='';document.getElementById('cr-'+i).classList.remove('active')});document.getElementById('inpSlip').value='';document.getElementById('inpWholesaler').value='';document.getElementById('inpCity').value='';document.getElementById('navLogo').src=LOGO_BASE64;
+  document.getElementById('inpDate').value=todayStr();updateDateDisplay();document.getElementById('priceCheck').checked=false;document.getElementById('priceCheckLabel').classList.remove('active');document.getElementById('btnGenerate').disabled=true;document.getElementById('inpCashPaid').value='';document.getElementById('cashPaidWrap').classList.add('hidden')}
+function getItemPrice(item){if(item.price!==undefined)return item.price;return PRICES[item.name]||0}
+
+// INVOICE HTML — bigger fonts, bold, logo, no empty gaps
+function invoiceCopyHTML(label,data){
+  const wp=data.withPrice;
+  let colCount=wp?5:3;
+  let thExtra='',grandTotalExtra='';
+  const grandTotal=data.items.reduce((s,x)=>s+(x.qty*getItemPrice(x)),0);
+  if(wp){thExtra='<th class="r">Rate</th><th class="r">Total</th>';grandTotalExtra='<td class="r"></td><td class="r" style="font-size:11pt;font-weight:800">PKR '+fmt(grandTotal)+'</td>'}
+  const rows=data.items.map((it,i)=>{
+    let extra='';if(wp){const p=getItemPrice(it);extra='<td class="r">'+fmt(p)+'</td><td class="r" style="font-weight:700">'+fmt(it.qty*p)+'</td>'}
+    return'<tr><td class="c" style="color:#888;font-weight:700">'+(i+1)+'</td><td style="font-weight:700">'+it.name+'</td><td class="r" style="font-weight:800">'+it.qty+'</td>'+extra+'</tr>';
+  }).join('');
+  // Empty rows to fill space (target ~15 rows total for neat layout)
+  const minRows=Math.max(0,8-data.items.length);
+  let emptyRows='';
+  for(let i=0;i<minRows;i++){emptyRows+='<tr><td>&nbsp;</td><td></td><td></td>'+(wp?'<td></td><td></td>':'')+'</tr>'}
+
+    let cashRows='';
+  if(wp&&data.cashPaid){
+    cashRows+='<tr><td></td><td style="font-weight:700">Cash Paid</td><td></td><td class="r"></td><td class="r" style="font-weight:700;color:#2e7d32">PKR '+fmt(data.cashPaid)+'</td></tr>';
+    if(data.cashPaid<grandTotal){cashRows+='<tr><td></td><td style="font-weight:800;color:#d32f2f">Carry Forward</td><td></td><td class="r"></td><td class="r" style="font-weight:800;color:#d32f2f">PKR '+fmt(grandTotal-data.cashPaid)+'</td></tr>'}
+    else if(data.cashPaid>grandTotal){cashRows+='<tr><td></td><td style="font-weight:800;color:#2e7d32">Return Amount</td><td></td><td class="r"></td><td class="r" style="font-weight:800;color:#2e7d32">PKR '+fmt(data.cashPaid-grandTotal)+'</td></tr>'}
+  }
+  return '<div class="invoice-copy"><div class="copy-badge">'+label+'</div>'+
+    '<div class="inv-hdr"><img src="'+LOGO_BASE64+'" class="inv-logo" alt="Logo"><div class="inv-hdr-text"><h1>Little Star</h1><div class="tagline">Quality Kids Vehicles&ensp;•&ensp;Karachi, Pakistan</div></div></div>'+
+    '<div class="inv-sep"></div>'+
+    '<div class="inv-meta"><div class="inv-mi"><b>Date:</b><span>'+fmtD(data.date)+(data.time?' &ensp;'+fmtTime(data.time):'')+'</span></div><div class="inv-mi"><b>Bill No:</b><span style="font-weight:800;letter-spacing:.5px;font-size:12pt">'+(data.slipNo||'\u2014')+'</span></div><div class="inv-mi"><b>Buyer:</b><span style="font-weight:800;font-size:12pt">'+data.wholesaler+'</span></div><div class="inv-mi"><b>City:</b><span>'+data.city+'</span></div></div>'+
+    '<div class="inv-table-wrap"><table class="inv-table"><thead><tr><th class="c" style="width:7%">#</th><th>Model</th><th class="r">Qty</th>'+thExtra+'</tr></thead><tbody>'+rows+emptyRows+'<tr class="trow"><td></td><td style="font-weight:800">TOTAL</td><td class="r" style="font-weight:800">'+data.totalUnits+' units</td>'+grandTotalExtra+'</tr>'+cashRows+'</tbody></table></div>'+
+    '</div>';
+}
+
+function renderPrintPreview(s){document.getElementById('a4Page').innerHTML='<div class="invoice-copies">'+invoiceCopyHTML('BUYER COPY',s)+invoiceCopyHTML("OFFICE COPY",s)+'</div>'}
+
+function printInvoice(){
+  const c=document.getElementById('a4Page').innerHTML;const w=window.open('','_blank','width=1100,height=800');
+  w.document.write('<!DOCTYPE html><html><head><title>Invoice'+(currentSale?.slipNo?' #'+currentSale.slipNo:'')+'</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"><style>@page{size:A4 landscape;margin:0}*{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans","Segoe UI",sans-serif}body{width:297mm;margin:0 auto}.invoice-copies{display:flex;width:100%;min-height:210mm}.invoice-copy{width:50%;padding:8mm 12mm 8mm;position:relative;overflow:hidden;border-right:2px dashed #bbb;display:flex;flex-direction:column}.invoice-copy:last-child{border-right:none;border-left:2px dashed #bbb}.copy-badge{text-align:center;font-size:12pt;font-weight:800;color:#000;background:#fff;padding:3px 15px;border:3px solid #000;text-transform:uppercase;letter-spacing:2px;margin-bottom:3mm}.inv-hdr{text-align:center;margin-bottom:3mm;display:flex;align-items:center;justify-content:center;gap:4mm}.inv-logo{width:14mm;height:auto}.inv-hdr-text h1{font-size:20pt;font-weight:800;color:#1a1a2e;letter-spacing:3px;text-transform:uppercase}.inv-hdr-text .tagline{font-size:8pt;color:#888;margin:1mm 0 0;letter-spacing:1px;text-transform:uppercase;font-weight:600}.inv-sep{height:2px;background:linear-gradient(90deg,transparent,#1a1a2e,transparent);margin:2.5mm 0}.inv-meta{display:grid;grid-template-columns:1fr 1fr;gap:2mm 8mm;margin-bottom:4mm;padding:3mm 4mm;background:#f4f4fa;border-radius:2mm;border:1px solid #e0e0e8}.inv-mi{display:flex;gap:2mm;font-size:10pt;font-weight:600}.inv-mi b{color:#1a1a2e;min-width:20mm;font-weight:800}.inv-mi span{color:#333;font-weight:700}.inv-table-wrap{flex:1;display:flex;flex-direction:column}.inv-table{width:100%;border-collapse:collapse;font-size:9pt;font-weight:600}.inv-table th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.5px;font-weight:700}.inv-table td{padding:1.8mm 3mm;border-bottom:.5px solid #ddd;font-weight:600}.inv-table tr:nth-child(even) td{background:#f8f8fc}.inv-table .trow td{border-top:2.5px solid #1a1a2e;font-weight:800;font-size:10pt;background:#e8e8f8!important;color:#1a1a2e;border-bottom:none}.r{text-align:right!important}.c{text-align:center!important}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+c+'</body></html>');
+  w.document.close();w.focus();setTimeout(()=>{w.print();w.close()},500);
+}
+
+function newSale(){resetForm();showView('entry')}
+
+// SALES LOG
+function renderLog(){
+  const wrap=document.getElementById('viewLog');
+  const fWho=(document.getElementById('filterWho')||{}).value||'';
+  const fFrom=(document.getElementById('filterFrom')||{}).value||'';
+  const fTo=(document.getElementById('filterTo')||{}).value||'';
+  let filtered=[...salesLog];
+  if(fWho)filtered=filtered.filter(s=>s.wholesaler===fWho);
+  if(fFrom)filtered=filtered.filter(s=>s.date>=fFrom);
+  if(fTo)filtered=filtered.filter(s=>s.date<=fTo);
+  if(logMonth){filtered=filtered.filter(s=>{const d=new Date(s.date+'T00:00:00');return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')===logMonth})}
+  const whoOpts=[...new Set(salesLog.map(s=>s.wholesaler))].sort().map(w=>'<option value="'+w+'"'+(w===fWho?' selected':'')+'>'+w+'</option>').join('');
+  const monthSet=new Set();salesLog.forEach(s=>{const d=new Date(s.date+'T00:00:00');monthSet.add(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))});
+  const months=[...monthSet].sort().reverse();
+  let monthPills='<button class="mpill'+(logMonth===''?' active':'')+'" onclick="logMonth=\'\';logPage=0;renderLog()">All</button>';
+  months.forEach(m=>{const[y,mo]=m.split('-');monthPills+='<button class="mpill'+(logMonth===m?' active':'')+'" onclick="logMonth=\''+m+'\';logPage=0;renderLog()">'+MONTH_NAMES[parseInt(mo)-1]+' '+y+'</button>'});
+  let html='<div class="month-pills">'+monthPills+'</div>';
+  html+='<div class="filters"><div class="fld"><label>🤝 Buyer</label><select id="filterWho" onchange="logPage=0;renderLog()"><option value="">All</option>'+whoOpts+'</select></div><div class="fld"><label>📅 From</label><input type="date" id="filterFrom" value="'+fFrom+'" onchange="logPage=0;renderLog()"></div><div class="fld"><label>📅 To</label><input type="date" id="filterTo" value="'+fTo+'" onchange="logPage=0;renderLog()"></div><button class="fbtn" onclick="clearFilters()">Clear</button><button class="fbtn" style="background:rgba(244,67,54,.15);border-color:rgba(244,67,54,.3);color:#f44336" onclick="resetAllFilters()">↺ Reset All</button></div>';
+  if(!filtered.length){html+='<div class="log-empty">No sales found.</div>';wrap.innerHTML=html;return}
+  const totU=filtered.reduce((s,x)=>s+x.totalUnits,0);
+  const totP=filtered.reduce((s,sale)=>s+sale.items.reduce((ss,it)=>ss+(it.qty*getItemPrice(it)),0),0);
+  const rev=[...filtered].reverse();const totalPages=Math.ceil(rev.length/PAGE_SIZE);if(logPage>=totalPages)logPage=totalPages-1;const start=logPage*PAGE_SIZE;const pageItems=rev.slice(start,start+PAGE_SIZE);
+  html+='<div class="log-stats">'+filtered.length+' sale'+(filtered.length>1?'s':'')+' • '+fmt(totU)+' units • <span style="color:#4caf50;font-weight:700">PKR '+fmt(totP)+'</span>'+(totalPages>1?' • Page '+(logPage+1)+'/'+totalPages:'')+'</div>';
+  pageItems.forEach(sale=>{const chips=sale.items.map(it=>'<span class="log-chip">'+it.name+' × <b>'+it.qty+'</b></span>').join('');const saleTotal=sale.items.reduce((s,it)=>s+(it.qty*getItemPrice(it)),0);html+='<div class="log-card"><div class="log-head"><div class="lh-left"><span class="ldate">'+fmtD(sale.date)+(sale.time?' <span style="font-weight:600;color:#888;font-size:11px">'+fmtTime(sale.time)+'</span>':'')+'</span>'+(sale.slipNo?'<span class="lslip">'+sale.slipNo+'</span>':'')+'<span class="lwho">'+sale.wholesaler+' — '+sale.city+'</span><span class="lunits">'+sale.totalUnits+' units</span>'+(sale.withPrice?'<span class="lprice-tag">₨ Price</span>':'')+'<span class="ltotal-price">PKR '+fmt(saleTotal)+'</span></div><div class="lh-right"><button class="lbtn" onclick="reprintSale('+sale.id+')" title="Reprint">🖨️</button><button class="lbtn" onclick="openEditModal('+sale.id+')" title="Edit">✏️</button><button class="lbtn lbtn-del" onclick="confirmDelete('+sale.id+')" title="Delete">✕</button></div></div><div class="log-items">'+chips+'</div></div>'});
+  if(totalPages>1){html+='<div class="pager"><button onclick="logPage--;renderLog()"'+(logPage===0?' disabled':'')+'>← Prev</button><span>Page '+(logPage+1)+' of '+totalPages+'</span><button onclick="logPage++;renderLog()"'+(logPage>=totalPages-1?' disabled':'')+'>Next →</button></div>'}
+  wrap.innerHTML=html;
+}
+function clearFilters(){logPage=0;logMonth='';document.getElementById('filterWho').value='';document.getElementById('filterFrom').value='';document.getElementById('filterTo').value='';renderLog()}
+function resetAllFilters(){logPage=0;logMonth='';renderLog()}
+function confirmDelete(id){const s=salesLog.find(x=>x.id===id);if(!s)return;const sNum=parseInt(s.slipNo)||0;let mx=0;salesLog.forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});const isLast=sNum===mx;const msg='Delete this sale?\nBill No: '+(s.slipNo||'N/A')+'\n'+fmtD(s.date)+' — '+s.wholesaler+' — '+s.totalUnits+' units'+(isLast?'\n\nNext new bill will revert to #'+s.slipNo:'\n\nThis cannot be undone.');if(confirm(msg)){salesLog=salesLog.filter(x=>x.id!==id);save();updateBadge();renderLog();document.getElementById('inpSlip').value=getNextSlip();showToast(isLast?'🗑️ Deleted — Next bill reverts to #'+s.slipNo:'🗑️ Deleted')}}
+function reprintSale(id){const s=salesLog.find(x=>x.id===id);if(!s)return;currentSale=s;renderPrintPreview(s);showView('print')}
+
+function openEditModal(id){
+  const sale=salesLog.find(x=>x.id===id);if(!sale)return;editingSaleId=id;
+  const wopts=WHOLESALERS.map((w,i)=>'<option value="'+i+'"'+(w.n===sale.wholesaler?' selected':'')+'>'+w.n+' ('+w.c+')</option>').join('');
+  const crows=CAR_MODELS.map((car,i)=>{const ex=sale.items.find(it=>it.name===car.n);const q=ex?ex.qty:'';const p=ex?ex.price:car.p;return'<div class="cr '+(q?'active':'')+'" id="ecr-'+i+'" style="flex-wrap:wrap"><span class="cname">'+car.n+'</span><input type="number" min="0" placeholder="0" id="eqty-'+i+'" value="'+q+'" style="width:46px" oninput="updateEditRow('+i+')"><input type="number" min="0" placeholder="Price" id="eprice-'+i+'" value="'+p+'" style="width:68px;font-size:10.5px;color:#e67e22;border-color:#f0cca8" title="Price for '+car.n+'"></div>'}).join('');
+  document.getElementById('editModalBody').innerHTML='<div class="fgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"><div class="fld"><label>📅 Date</label><input type="date" id="editDate" value="'+sale.date+'"></div><div class="fld"><label>🧾 Bill No.</label><input type="text" id="editSlip" value="'+(sale.slipNo||'')+'"></div><div class="fld"><label>🤝 Buyer</label><select id="editWho" onchange="onEditWhoChange()">'+wopts+'</select></div><div class="fld"><label>📍 City</label><input type="text" id="editCity" value="'+sale.city+'" readonly></div></div><div style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><label class="price-check'+(sale.withPrice?' active':'')+'" id="editPriceLabel"><input type="checkbox" id="editPriceCheck"'+(sale.withPrice?' checked':'')+'  onchange="document.getElementById(\'editPriceLabel\').classList.toggle(\'active\',this.checked);document.getElementById(\'editCashPaidWrap\').classList.toggle(\'hidden\',!this.checked)"><span>Include prices on invoice</span></label><div class="fld'+(sale.withPrice?'':' hidden')+'" id="editCashPaidWrap" style="min-width:120px"><label>💵 Cash Paid</label><input type="number" id="editCashPaid" min="0" placeholder="0" value="'+(sale.cashPaid||'')+'" style="padding:5px 8px;font-size:12px;border:1.5px solid #ddd;border-radius:6px;width:120px;font-family:inherit"></div></div><div class="sec-title">🚗 Units & Prices <span style="font-weight:400;font-size:9px;color:#e67e22;text-transform:none;letter-spacing:0;margin-left:6px">Orange = price per unit (editable)</span></div><div class="car-grid" style="max-height:260px;grid-template-columns:1fr 1fr">'+crows+'</div>';
+  document.getElementById('editModal').classList.remove('hidden');
+}
+function onEditWhoChange(){document.getElementById('editCity').value=WHOLESALERS[parseInt(document.getElementById('editWho').value)].c}
+function updateEditRow(i){const q=parseInt(document.getElementById('eqty-'+i).value)||0;document.getElementById('ecr-'+i).classList.toggle('active',q>0)}
+function closeEditModal(){document.getElementById('editModal').classList.add('hidden');editingSaleId=null}
+function saveEdit(){const idx=salesLog.findIndex(x=>x.id===editingSaleId);if(idx===-1)return;const wIdx=parseInt(document.getElementById('editWho').value);const w=WHOLESALERS[wIdx];const items=[];CAR_MODELS.forEach((car,i)=>{const q=parseInt(document.getElementById('eqty-'+i).value)||0;if(q>0){const p=parseInt(document.getElementById('eprice-'+i).value)||car.p;items.push({name:car.n,qty:q,price:p})}});if(!items.length){alert('Enter at least one quantity.');return}const wp=document.getElementById('editPriceCheck').checked;const cashPaid=wp?(parseInt(document.getElementById('editCashPaid').value)||0):0;salesLog[idx]={...salesLog[idx],date:document.getElementById('editDate').value,slipNo:document.getElementById('editSlip').value,wholesaler:w.n,city:w.c,items,totalUnits:items.reduce((s,x)=>s+x.qty,0),withPrice:wp,cashPaid};save();closeEditModal();renderLog();updateBadge();showToast('✅ Updated!');if(confirm('Sale updated. Reprint corrected invoice?'))reprintSale(editingSaleId)}
+
+function renderSummary(){
+  const wrap=document.getElementById('viewSummary');const today=todayStr();const ts=salesLog.filter(s=>s.date===today);
+  const totalU=ts.reduce((s,x)=>s+x.totalUnits,0);
+  const totalP=ts.reduce((s,sale)=>s+sale.items.reduce((ss,it)=>ss+(it.qty*getItemPrice(it)),0),0);
+  const mq={};ts.forEach(s=>s.items.forEach(it=>{mq[it.name]=(mq[it.name]||0)+it.qty}));
+  let h='<div style="color:#fff;font-size:16px;font-weight:800;margin-bottom:14px">📊 Today — '+fmtD(today)+'</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"><div class="ds-big" style="margin:0"><div class="ds-name">Total Units</div><div class="ds-val">'+fmt(totalU)+'</div></div><div class="ds-big" style="margin:0"><div class="ds-name">Sales Entries</div><div class="ds-val" style="font-size:22px;color:#fff">'+ts.length+'</div></div></div>';
+  if(Object.keys(mq).length){h+='<div class="ds-card"><div class="ds-title">🚗 Units Per Model</div><div class="ds-grid">'+Object.entries(mq).sort((a,b)=>b[1]-a[1]).map(([n,q])=>'<div class="ds-item"><div class="ds-name">'+n+'</div><div class="ds-val">'+q+'</div></div>').join('')+'</div></div>'}
+  if(ts.length){
+    h+='<div style="color:rgba(255,255,255,.55);font-size:12px;font-weight:600;margin-bottom:8px">'+ts.length+' sale'+(ts.length>1?'s':'')+' • '+fmt(totalU)+' units • <span style="color:#4caf50;font-weight:700">PKR '+fmt(totalP)+'</span></div>';
+    [...ts].reverse().forEach(sale=>{
+      const chips=sale.items.map(it=>'<span class="log-chip">'+it.name+' × <b>'+it.qty+'</b></span>').join('');
+      const saleTotal=sale.items.reduce((s,it)=>s+(it.qty*getItemPrice(it)),0);
+      h+='<div class="log-card"><div class="log-head"><div class="lh-left"><span class="ldate">'+fmtD(sale.date)+(sale.time?' <span style="font-weight:600;color:#888;font-size:11px">'+fmtTime(sale.time)+'</span>':'')+'</span>'+(sale.slipNo?'<span class="lslip">'+sale.slipNo+'</span>':'')+'<span class="lwho">'+sale.wholesaler+' — '+sale.city+'</span><span class="lunits">'+sale.totalUnits+' units</span><span class="ltotal-price">PKR '+fmt(saleTotal)+'</span></div><div class="lh-right"><button class="lbtn" onclick="reprintSale('+sale.id+')" title="Reprint">🖨️</button><button class="lbtn" onclick="openEditModal('+sale.id+')" title="Edit">✏️</button><button class="lbtn lbtn-del" onclick="confirmDelete('+sale.id+')" title="Delete">✕</button></div></div><div class="log-items">'+chips+'</div></div>';
+    });
+  }
+  if(!ts.length)h+='<div class="log-empty">No sales today yet.</div>';
+  wrap.innerHTML=h;
+}
+
+function getPriceHistory(){try{return JSON.parse(localStorage.getItem('ls_priceHistory'))||[]}catch(e){return[]}}
+function savePriceHistory(h){try{localStorage.setItem('ls_priceHistory',JSON.stringify(h))}catch(e){}}
+
+function openPriceManager(){let html='<div class="pm-grid">';CAR_MODELS.forEach((car,i)=>{html+='<div class="pm-row"><span class="pm-name">'+car.n+'<br><span class="pm-old">Current: PKR '+fmt(car.p)+'</span></span><input type="number" id="pm-'+i+'" value="'+car.p+'" min="0" oninput="highlightPriceChange('+i+','+car.p+')"></div>'});html+='</div><div style="margin-top:14px;padding-top:12px;border-top:2px solid #eee;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-save" style="background:#e67e22" onclick="openOldPriceModal()">🔄 Update Old Entry Prices</button><button class="btn-save" style="background:#6c5ce7" onclick="openPriceHistory()">📜 Price History</button></div>';document.getElementById('priceModalBody').innerHTML=html;document.getElementById('priceModal').classList.remove('hidden')}
+function closePriceManager(){document.getElementById('priceModal').classList.add('hidden')}
+function highlightPriceChange(i,orig){const inp=document.getElementById('pm-'+i);const v=parseInt(inp.value)||0;inp.classList.toggle('pm-changed',v!==orig)}
+function savePrices(){const saved={};const changes=[];CAR_MODELS.forEach((car,i)=>{const v=parseInt(document.getElementById('pm-'+i).value)||0;if(v!==car.p)changes.push({model:car.n,from:car.p,to:v});car.p=v;saved[car.n]=v});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(saved))}catch(e){}if(changes.length){const history=getPriceHistory();history.push({date:new Date().toISOString(),changes});savePriceHistory(history)}closePriceManager();showToast('💰 Prices updated!'+(changes.length?' ('+changes.length+' changed)':''))}
+
+function openPriceHistory(){const history=getPriceHistory();let html='';if(!history.length){html='<div style="text-align:center;color:#888;padding:30px">No price changes recorded yet.</div>'}else{html='<div class="ph-wrap">';[...history].reverse().forEach(entry=>{const d=new Date(entry.date);const ds=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');html+='<div class="ph-entry"><div class="ph-date">'+ds+'</div><div class="ph-changes">';entry.changes.forEach(c=>{html+='<div class="ph-chip"><b>'+c.model+'</b> <span class="ph-old">'+fmt(c.from)+'</span> → <span class="ph-new">'+fmt(c.to)+'</span></div>'});html+='</div></div>'});html+='</div>'}document.getElementById('priceHistoryBody').innerHTML=html;document.getElementById('priceHistoryModal').classList.remove('hidden')}
+function closePriceHistory(){document.getElementById('priceHistoryModal').classList.add('hidden')}
+function openOldPriceModal(){let html='<p style="font-size:12px;color:#555;margin-bottom:12px">Select a model and set the new price. All past sales containing that model will be updated.</p><div class="fld" style="margin-bottom:10px"><label>🚗 Car Model</label><select id="oldPriceModel" style="padding:8px;font-size:13px;border:1.5px solid #ddd;border-radius:6px;width:100%">';CAR_MODELS.forEach((car,i)=>{html+='<option value="'+i+'">'+car.n+' (Current: PKR '+fmt(car.p)+')</option>'});html+='</select></div><div class="fld"><label>💰 New Price for Old Entries</label><input type="number" id="oldPriceValue" style="padding:8px;font-size:13px;border:1.5px solid #ddd;border-radius:6px;width:100%" placeholder="Enter new price"></div>';document.getElementById('oldPriceModalBody').innerHTML=html;document.getElementById('oldPriceModal').classList.remove('hidden')}
+function closeOldPriceModal(){document.getElementById('oldPriceModal').classList.add('hidden')}
+function applyOldPriceUpdate(){const mi=parseInt(document.getElementById('oldPriceModel').value);const np=parseInt(document.getElementById('oldPriceValue').value);if(isNaN(np)||np<0){alert('Enter a valid price.');return}const modelName=CAR_MODELS[mi].n;let count=0;salesLog.forEach(sale=>{sale.items.forEach(it=>{if(it.name===modelName){it.price=np;count++}})});save();closeOldPriceModal();closePriceManager();showToast('✅ Updated '+count+' entries for '+modelName+' to PKR '+fmt(np))}
+
+function exportExcel(){if(!salesLog.length)return;const rows=[];let n=1;salesLog.forEach(s=>{s.items.forEach(it=>{const p=getItemPrice(it);rows.push({'#':n++,'DATE':fmtD(s.date),'BILL NO.':s.slipNo,'BUYER':s.wholesaler,'CITY':s.city,'CAR MODEL':it.name,'UNITS SOLD':it.qty,'UNIT PRICE (PKR)':p,'TOTAL (PKR)':it.qty*p,'NOTES':''})})});const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:5},{wch:12},{wch:12},{wch:16},{wch:10},{wch:14},{wch:11},{wch:15},{wch:14},{wch:10}];XLSX.utils.book_append_sheet(wb,ws,'Sales Log Export');XLSX.writeFile(wb,'LittleStar_Sales_'+todayStr()+'.xlsx');showToast('📥 Exported!')}
+
+
+function backupData(){const priceData={};CAR_MODELS.forEach(c=>priceData[c.n]=c.p);const d={v:2,date:new Date().toISOString(),salesLog,prices:priceData};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='LittleStar_Backup_'+todayStr()+'.json';a.click();showToast('💾 Backup saved!')}
+function restoreData(event){const f=event.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(e){try{const d=JSON.parse(e.target.result);if(!d.salesLog||!Array.isArray(d.salesLog)){alert('Invalid file.');return}if(!confirm('Replace all data with '+d.salesLog.length+' sales from backup?'))return;salesLog=d.salesLog;save();if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}updateBadge();showToast('✅ Restored '+salesLog.length+' sales!')}catch(err){alert('Error: '+err.message)}};r.readAsText(f);event.target.value=''}
+
+function showView(v){['Entry','Print','Log','Summary','Monthly'].forEach(n=>{document.getElementById('view'+n).classList.toggle('hidden',v!==n.toLowerCase())});document.getElementById('tabEntry').className='tab '+(v==='entry'?'tab-on':'tab-off');document.getElementById('tabLog').className='tab '+(v==='log'?'tab-on':'tab-off');document.getElementById('tabSummary').className='tab '+(v==='summary'?'tab-on':'tab-off');document.getElementById('tabMonthly').className='tab '+(v==='monthly'?'tab-on':'tab-off');if(v==='log'){logPage=0;renderLog()}if(v==='summary')renderSummary();if(v==='monthly')renderMonthlyBills()}
+function updateBadge(){const b=document.getElementById('logBadge');const e=document.getElementById('btnExport');if(salesLog.length>0){b.classList.remove('hidden');b.textContent=salesLog.length;e.disabled=false}else{b.classList.add('hidden');e.disabled=true}}
+
+function renderMonthlyBills(){
+  const wrap=document.getElementById('viewMonthly');
+  const selWho=(document.getElementById('mbWho')||{}).value||'';
+  const selMonth=(document.getElementById('mbMonth')||{}).value||'';
+  const whoOpts=[...new Set(salesLog.map(s=>s.wholesaler))].sort().map(w=>'<option value="'+w+'"'+(w===selWho?' selected':'')+'>'+w+'</option>').join('');
+  const monthSet=new Set();salesLog.forEach(s=>{const d=new Date(s.date+'T00:00:00');monthSet.add(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))});
+  const months=[...monthSet].sort().reverse();
+  const monthOpts=months.map(m=>{const[y,mo]=m.split('-');return'<option value="'+m+'"'+(m===selMonth?' selected':'')+'>'+MONTH_NAMES[parseInt(mo)-1]+' '+y+'</option>'}).join('');
+
+  let html='<div style="color:#fff;font-size:16px;font-weight:800;margin-bottom:14px">📊 Monthly Bill Summary</div>';
+  html+='<div class="filters"><div class="fld"><label>🤝 Buyer</label><select id="mbWho" onchange="renderMonthlyBills()"><option value="">— Select —</option>'+whoOpts+'</select></div><div class="fld"><label>📅 Month</label><select id="mbMonth" onchange="renderMonthlyBills()"><option value="">— Select —</option>'+monthOpts+'</select></div>';
+  if(selWho&&selMonth)html+='<button class="fbtn" style="background:rgba(76,175,80,.2);border-color:#4caf50;color:#4caf50" onclick="printMonthlyBill()">🖨️ Print Monthly Bill</button>';
+  html+='</div>';
+
+  if(selWho&&selMonth){
+    const filtered=salesLog.filter(s=>{
+      if(s.wholesaler!==selWho)return false;
+      const d=new Date(s.date+'T00:00:00');
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')===selMonth;
+    });
+    if(!filtered.length){html+='<div class="log-empty">No sales found.</div>';wrap.innerHTML=html;return}
+    const totU=filtered.reduce((s,x)=>s+x.totalUnits,0);
+    const totP=filtered.reduce((s,sale)=>s+sale.items.reduce((ss,it)=>ss+(it.qty*getItemPrice(it)),0),0);
+    const totalPaid=filtered.reduce((s,sale)=>s+(sale.cashPaid||0),0);
+    html+='<div style="color:rgba(255,255,255,.55);font-size:12px;font-weight:600;margin-bottom:10px">'+filtered.length+' sale'+(filtered.length>1?'s':'')+' • '+fmt(totU)+' units • <span style="color:#4caf50;font-weight:700">PKR '+fmt(totP)+'</span>'+(totalPaid?' • Paid: PKR '+fmt(totalPaid):'')+'</div>';
+    filtered.forEach(sale=>{
+      const chips=sale.items.map(it=>'<span class="log-chip">'+it.name+' × <b>'+it.qty+'</b></span>').join('');
+      const saleTotal=sale.items.reduce((s,it)=>s+(it.qty*getItemPrice(it)),0);
+      html+='<div class="log-card"><div class="log-head"><div class="lh-left"><span class="ldate">'+fmtD(sale.date)+(sale.time?' <span style="font-weight:600;color:#888;font-size:11px">'+fmtTime(sale.time)+'</span>':'')+'</span>'+(sale.slipNo?'<span class="lslip">'+sale.slipNo+'</span>':'')+'<span class="lunits">'+sale.totalUnits+' units</span><span class="ltotal-price">PKR '+fmt(saleTotal)+'</span>'+(sale.cashPaid?'<span class="lprice-tag">Paid: '+fmt(sale.cashPaid)+'</span>':'')+'</div></div><div class="log-items">'+chips+'</div></div>';
+    });
+    const balance=totP-totalPaid;
+    html+='<div style="background:#1a1a2e;border-radius:9px;padding:14px 18px;margin-top:14px;border:1px solid rgba(255,255,255,.1)"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center"><div><div style="color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase">Total Amount</div><div style="color:#4caf50;font-size:20px;font-weight:800">PKR '+fmt(totP)+'</div></div><div><div style="color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase">Total Paid</div><div style="color:#fff;font-size:20px;font-weight:800">PKR '+fmt(totalPaid)+'</div></div><div><div style="color:rgba(255,255,255,.4);font-size:10px;text-transform:uppercase">'+(balance>0?'Balance Due':'Overpaid')+'</div><div style="color:'+(balance>0?'#f44336':'#4caf50')+';font-size:20px;font-weight:800">PKR '+fmt(Math.abs(balance))+'</div></div></div></div>';
+  }
+  wrap.innerHTML=html;
+}
+
+function printMonthlyBill(){
+  const who=document.getElementById('mbWho').value;
+  const month=document.getElementById('mbMonth').value;
+  if(!who||!month)return;
+  const[y,mo]=month.split('-');
+  const monthName=MONTH_NAMES[parseInt(mo)-1]+' '+y;
+  const filtered=salesLog.filter(s=>{
+    if(s.wholesaler!==who)return false;
+    const d=new Date(s.date+'T00:00:00');
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')===month;
+  });
+  if(!filtered.length)return;
+  const totU=filtered.reduce((s,x)=>s+x.totalUnits,0);
+  const totP=filtered.reduce((s,sale)=>s+sale.items.reduce((ss,it)=>ss+(it.qty*getItemPrice(it)),0),0);
+  const totalPaid=filtered.reduce((s,sale)=>s+(sale.cashPaid||0),0);
+  const balance=totP-totalPaid;
+
+  let rows=filtered.map((sale,i)=>{
+    const saleTotal=sale.items.reduce((s,it)=>s+(it.qty*getItemPrice(it)),0);
+    const items=sale.items.map(it=>it.name+' ×'+it.qty).join(', ');
+    return'<tr><td class="c">'+(i+1)+'</td><td>'+fmtD(sale.date)+'</td><td>'+(sale.slipNo||'-')+'</td><td>'+items+'</td><td class="c">'+sale.totalUnits+'</td><td class="r">'+fmt(saleTotal)+'</td><td class="r">'+fmt(sale.cashPaid||0)+'</td></tr>';
+  }).join('');
+
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write('<!DOCTYPE html><html><head><title>Monthly Bill - '+who+'</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"><style>@page{size:A4 portrait;margin:10mm}*{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans",sans-serif}body{padding:10mm}.hdr{text-align:center;margin-bottom:6mm}.hdr h1{font-size:20pt;font-weight:800;letter-spacing:3px;text-transform:uppercase}.hdr .sub{font-size:9pt;color:#666;margin-top:1mm}.sep{height:2px;background:#000;margin:4mm 0}.meta{display:flex;justify-content:space-between;margin-bottom:4mm;font-size:11pt;font-weight:600}.meta b{font-weight:800}table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:4mm}th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase}td{padding:2mm 3mm;border-bottom:.5px solid #ddd;font-weight:600}tr:nth-child(even) td{background:#f8f8fc}.trow td{border-top:2px solid #000;font-weight:800;font-size:10pt;background:#e8e8f8!important}.r{text-align:right}.c{text-align:center}.summary{margin-top:4mm;padding:4mm;border:2px solid #000;border-radius:2mm;display:flex;justify-content:space-around;text-align:center}.summary .lbl{font-size:8pt;text-transform:uppercase;color:#666}.summary .val{font-size:14pt;font-weight:800}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
+    '<div class="hdr"><h1>Little Star</h1><div class="sub">Monthly Bill Summary</div></div><div class="sep"></div>'+
+    '<div class="meta"><div><b>Buyer:</b> '+who+'</div><div><b>Month:</b> '+monthName+'</div><div><b>Total Sales:</b> '+filtered.length+'</div></div>'+
+    '<table><thead><tr><th class="c">#</th><th>Date</th><th>Bill No</th><th>Items</th><th class="c">Units</th><th class="r">Amount</th><th class="r">Paid</th></tr></thead><tbody>'+rows+
+    '<tr class="trow"><td></td><td colspan="3">TOTAL</td><td class="c">'+totU+'</td><td class="r">PKR '+fmt(totP)+'</td><td class="r">PKR '+fmt(totalPaid)+'</td></tr></tbody></table>'+
+    '<div class="summary"><div><div class="lbl">Total Amount</div><div class="val">PKR '+fmt(totP)+'</div></div><div><div class="lbl">Total Paid</div><div class="val">PKR '+fmt(totalPaid)+'</div></div><div><div class="lbl">'+(balance>0?'Balance Due':'Overpaid')+'</div><div class="val" style="color:'+(balance>0?'red':'green')+'">PKR '+fmt(Math.abs(balance))+'</div></div></div>'+
+    '</body></html>');
+  w.document.close();w.focus();setTimeout(()=>{w.print();w.close()},500);
+}
+
+init();
+</script>
+</body>
+</html>
