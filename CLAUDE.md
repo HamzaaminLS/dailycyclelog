@@ -16,7 +16,7 @@ Also viewed on **phone** (read-only, real-time sync via Firebase).
   - URL: `https://daily-sales-c55bd-default-rtdb.asia-southeast1.firebasedatabase.app`
   - Project ID: `daily-sales-c55bd`
   - Ref: `fbDB.ref('littlestar')`
-  - `apiKey` and `appId` still need to be filled in by user
+  - Fully configured with apiKey, appId, and measurementId
   - **Real-time listener:** `FB_REF.on('value', ...)` — phone sees changes instantly when laptop saves
   - Uses `lastSync` timestamp comparison (not array length) — syncs edits + deletes too
   - `_justPushed` flag (5s) prevents listener echo after own push
