@@ -10,17 +10,17 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;min-height:100vh}
+body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;min-height:100vh;overflow-x:hidden}
 
 /* NAV */
-.topnav{background:#1a1a2e;display:flex;align-items:center;padding:0 24px;height:56px;gap:8px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:50}
-.brand{font-size:17px;font-weight:800;color:#fff;letter-spacing:1px;margin-right:22px;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.tab{padding:8px 18px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+.topnav{background:#1a1a2e;display:flex;align-items:center;padding:8px 16px;min-height:48px;gap:6px;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.brand{font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;margin-right:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tab{padding:6px 12px;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
 .tab-off{background:transparent;color:rgba(255,255,255,.4)}
 .tab-off:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8)}
 .tab-on{background:rgba(255,255,255,.12);color:#fff}
-.nav-right{margin-left:auto;display:flex;gap:6px;align-items:center}
-.nbtn-sm{padding:7px 15px;border-radius:7px;border:1.5px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.7);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.nav-right{margin-left:auto;display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.nbtn-sm{padding:5px 10px;border-radius:6px;border:1.5px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.7);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
 .nbtn-sm:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.35)}
 .nbtn-sm:disabled{opacity:.3;cursor:not-allowed}
 .badge{background:#4caf50;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:9px;margin-left:4px}
@@ -30,9 +30,9 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 .hidden{display:none!important}
 
 /* ENTRY */
-.entry-wrap{margin:14px auto;padding:0 20px;max-width:1440px}
+.entry-wrap{margin:12px auto;padding:0 16px;max-width:1200px}
 .entry-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 5px 30px rgba(0,0,0,.2)}
-.entry-top{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.entry-top{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .entry-top h2{color:#fff;font-size:18px;font-weight:800;margin:0;white-space:nowrap}
 .entry-top-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .price-check{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .15s;user-select:none}
@@ -45,7 +45,7 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 .btn-gen:disabled{opacity:.3;cursor:not-allowed}
 .btn-today{padding:7px 14px;border:1.5px solid #e0e0e8;border-radius:7px;background:#eef6ee;color:#2e7d32;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
 .btn-today:hover{background:#c8e6c9;border-color:#4caf50}
-.entry-body{padding:16px 22px}
+.entry-body{padding:12px 16px}
 .meta-row{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
 .meta-row .fld{flex:1;min-width:170px}
 .fld label{display:block;font-size:11px;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
@@ -67,7 +67,7 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 .cr input:focus{border-color:#1a1a2e;box-shadow:0 0 0 2px rgba(26,26,46,.1)}
 
 /* PRINT - LANDSCAPE */
-.print-wrap{padding:18px;display:flex;flex-direction:column;align-items:center}
+.print-wrap{padding:16px;display:flex;flex-direction:column;align-items:center;overflow-x:auto;max-width:100vw}
 .print-actions{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;justify-content:center}
 .print-actions button{padding:10px 26px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:all .15s}
 .pbtn{background:#1a1a2e;color:#fff}
@@ -192,58 +192,72 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 .toast{position:fixed;bottom:18px;right:18px;background:#1a1a2e;color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:0 3px 16px rgba(0,0,0,.3);z-index:60;animation:toastAnim 2.5s forwards;pointer-events:none}
 @keyframes toastAnim{0%{opacity:0;transform:translateY(10px)}8%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateY(-5px)}}
 
-@media(max-width:900px){.car-grid{grid-template-columns:repeat(2,1fr)}}
+/* TABLET — 14" Dell 7420 at 150% scaling (~1280px) */
+@media(max-width:1280px){
+  .car-grid{grid-template-columns:repeat(3,1fr)}
+  .entry-wrap{max-width:100%}
+}
 
+/* SMALL LAPTOP / LARGE TABLET */
+@media(max-width:1024px){
+  .car-grid{grid-template-columns:repeat(2,1fr)}
+  .nav-right{width:100%;padding:4px 0}
+  .entry-top-right{width:100%;justify-content:flex-start}
+}
+
+/* MOBILE */
 @media(max-width:640px){
-  /* NAV */
-  .topnav{padding:6px 10px;height:auto;flex-wrap:wrap;gap:4px}
-  .brand{font-size:13px;margin-right:4px;order:0}
-  .tab{padding:6px 10px;font-size:12px}
-  .nav-right{width:100%;order:3;gap:4px;flex-wrap:wrap;padding-bottom:4px}
-  .nbtn-sm{padding:5px 9px;font-size:11px}
+  .topnav{padding:6px 10px;gap:4px}
+  .brand{font-size:13px;margin-right:4px}
+  .tab{padding:5px 8px;font-size:11.5px}
+  .nbtn-sm{padding:4px 8px;font-size:10.5px}
 
-  /* ENTRY WRAP */
   .entry-wrap{padding:0 8px;margin:8px auto}
-  .entry-top{padding:10px 14px;gap:8px}
+  .entry-top{padding:8px 12px;gap:6px}
   .entry-top h2{font-size:14px}
-  .entry-top-right{gap:8px;width:100%}
-  .btn-gen{padding:9px 16px;font-size:13px;flex:1}
+  .entry-top-right{gap:6px;width:100%}
+  .btn-gen{padding:8px 14px;font-size:12px;flex:1}
+  .price-check{padding:5px 10px}
   .price-check span{font-size:11px}
-  .entry-body{padding:10px 12px}
+  .entry-body{padding:8px 10px}
 
-  /* META ROW — stack all fields full width */
   .meta-row{flex-direction:column;gap:8px}
   .meta-row .fld{min-width:unset;flex:unset;width:100%}
   .date-row{max-width:100%!important;width:100%}
   .date-row .fld{flex:1}
 
-  /* CAR GRID */
   .car-grid{grid-template-columns:repeat(2,1fr);max-height:none}
+  .cr{padding:6px 8px;gap:6px}
+  .cr .cname{font-size:12px}
+  .cr input{width:52px;padding:6px;font-size:13px}
 
-  /* LOG */
-  .log-wrap{padding:0 10px;margin:10px auto}
-  .log-head{padding:8px 12px}
+  .log-wrap{padding:0 8px;margin:8px auto}
+  .log-head{padding:8px 10px}
+  .lh-left{gap:6px}
   .ldate{font-size:12px}
-  .lwho{font-size:12px}
-  .lslip,.lunits,.lprice-tag,.ltotal-price{font-size:11px;padding:2px 7px}
-  .lbtn{padding:4px 9px;font-size:12px}
-  .log-items{padding:5px 12px 8px}
-  .log-chip{font-size:11px;padding:2px 8px}
+  .lwho{font-size:11.5px}
+  .lslip,.lunits,.lprice-tag,.ltotal-price{font-size:10.5px;padding:2px 6px}
+  .lbtn{padding:4px 8px;font-size:11px}
+  .log-items{padding:4px 10px 8px}
+  .log-chip{font-size:10.5px;padding:2px 7px}
 
-  /* MODALS */
-  .modal-overlay{padding:8px}
+  .modal-overlay{padding:6px}
   .modal{max-height:96vh;border-radius:10px}
-  .modal-bd{padding:14px 16px}
-  .modal-hd{padding:12px 16px}
-  .modal-actions{padding:0 16px 14px;flex-wrap:wrap}
+  .modal-bd{padding:12px 14px}
+  .modal-hd{padding:10px 14px}
+  .modal-hd h3{font-size:15px}
+  .modal-actions{padding:0 14px 12px;flex-wrap:wrap}
+  .modal-actions button{padding:8px 16px;font-size:13px}
   .pm-grid{grid-template-columns:1fr}
 
-  /* SUMMARY */
-  .sum-wrap{padding:0 10px;margin:10px auto}
+  .sum-wrap{padding:0 8px;margin:8px auto}
+  .ds-big .ds-val{font-size:22px}
 
-  /* FILTERS */
-  .filters{gap:8px}
+  .filters{gap:6px}
   .filters .fld{min-width:calc(50% - 4px)}
+
+  .print-wrap{padding:8px}
+  .a4{width:100%;min-width:700px}
 }
 </style>
 </head>
@@ -286,13 +300,13 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
     </div>
     <div class="entry-body">
       <div class="meta-row">
-        <div class="date-row" style="max-width:220px">
+        <div class="date-row">
           <div class="fld"><label>📅 Date</label><input type="date" id="inpDate" onchange="updateDateDisplay()"><div class="date-nice" id="dateDisplay"></div></div>
           <button class="btn-today" onclick="setToday()" title="Set to today's date" style="margin-bottom:14px">Today</button>
         </div>
-        <div class="fld" style="max-width:140px"><label>🧾 Bill No.</label><input type="text" id="inpSlip" placeholder="Auto" readonly></div>
-        <div class="fld"><label>🤝 Buyer</label><select id="inpWholesaler" onchange="onBuyerChange()"><option value="">— Select Buyer —</option></select></div>
-        <div class="fld" style="max-width:120px"><label>📍 City</label><input type="text" id="inpCity" readonly></div>
+        <div class="fld"><label>🧾 Bill No.</label><input type="text" id="inpSlip" placeholder="Auto" readonly></div>
+        <div class="fld" style="flex:2"><label>🤝 Buyer</label><select id="inpWholesaler" onchange="onBuyerChange()"><option value="">— Select Buyer —</option></select></div>
+        <div class="fld"><label>📍 City</label><input type="text" id="inpCity" readonly></div>
       </div>
       <div class="sec-title">🚗 Enter Units <span style="font-weight:400;font-size:9px;color:#888;text-transform:none;letter-spacing:0;margin-left:8px">Use ↑↓←→ arrow keys to navigate</span></div>
       <div class="car-grid" id="carGrid"></div>
@@ -417,9 +431,10 @@ function doSync(){
   const priceData={};CAR_MODELS.forEach(c=>priceData[c.n]=c.p);
   const ledger=getLedger();
   const priceHistory=getPriceHistory();
+  const syncTime=new Date().toISOString();
   _justPushed=true;setTimeout(()=>{_justPushed=false},5000);
-  FB_REF.set({salesLog,prices:priceData,ledger,priceHistory,lastSync:new Date().toISOString()})
-    .then(()=>{clearPendingSync();updateSyncDot();showToast('☁️ Synced to cloud!')})
+  FB_REF.set({salesLog,prices:priceData,ledger,priceHistory,lastSync:syncTime})
+    .then(()=>{_lastKnownSync=syncTime;clearPendingSync();updateSyncDot();showToast('☁️ Synced!')})
     .catch(()=>{markPendingSync();updateSyncDot()});
 }
 function updateSyncDot(){
@@ -456,7 +471,7 @@ const DB={_m:{},get(k){try{const v=localStorage.getItem('ls_'+k);return v?JSON.p
 let salesLog=DB.get('salesLog')||[];
 let currentSale=null;let editingSaleId=null;let logPage=0;let logMonth='';const PAGE_SIZE=50;
 
-let _fbTimer=null;let _justPushed=false;
+let _fbTimer=null;let _justPushed=false;let _lastKnownSync='';
 function save(){
   DB.set('salesLog',salesLog);
   clearTimeout(_fbTimer);
@@ -644,17 +659,23 @@ function init(){
   ENTRY_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',entryFieldKey)});
   // Auto-sync pending changes on startup
   if(navigator.onLine&&hasPendingSync()){setTimeout(()=>doSync(),2000)}
-  // Real-time Firebase listener — phone sees changes instantly
+  // Real-time Firebase listener — syncs new entries, edits, and deletes
   FB_REF.on('value',snap=>{
     try{
       const d=snap.val();
       if(!d||!d.salesLog)return;
-      if(_justPushed)return;
-      if(d.salesLog.length>salesLog.length){
+      if(_justPushed){_lastKnownSync=d.lastSync||'';return}
+      if(d.lastSync&&d.lastSync!==_lastKnownSync){
+        _lastKnownSync=d.lastSync;
         salesLog=d.salesLog;DB.set('salesLog',salesLog);
         if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}
         if(d.ledger){saveLedger(d.ledger)}
-        updateBadge();if(typeof renderLog==='function')renderLog();showToast('⬇️ '+d.salesLog.length+' sales synced');
+        if(d.priceHistory){savePriceHistory(d.priceHistory)}
+        updateBadge();
+        const lv=document.getElementById('viewLog');if(lv&&!lv.classList.contains('hidden'))renderLog();
+        const sv=document.getElementById('viewSummary');if(sv&&!sv.classList.contains('hidden'))renderSummary();
+        const mv=document.getElementById('viewMonthly');if(mv&&!mv.classList.contains('hidden'))renderMonthlyBills();
+        showToast('⬇️ Synced — '+d.salesLog.length+' sales');
       }
     }catch(e){console.log('Firebase listener error:',e)}
   });

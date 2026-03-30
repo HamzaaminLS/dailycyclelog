@@ -18,7 +18,10 @@ Also viewed on **phone** (read-only, real-time sync via Firebase).
   - Ref: `fbDB.ref('littlestar')`
   - `apiKey` and `appId` still need to be filled in by user
   - **Real-time listener:** `FB_REF.on('value', ...)` — phone sees changes instantly when laptop saves
+  - Uses `lastSync` timestamp comparison (not array length) — syncs edits + deletes too
   - `_justPushed` flag (5s) prevents listener echo after own push
+  - `_lastKnownSync` tracks last processed timestamp to detect remote changes
+  - Re-renders active view (log/summary/monthly) on incoming sync
   - Save debounce: 1000ms (was 3000ms)
   - ~50 entries/day — well within Firebase free (Spark) plan limits
 - **Offline auto-sync:** saves locally when offline, auto-pushes on reconnect. Green/red dot in nav.
@@ -103,11 +106,18 @@ Sprinter(2750), Stroller(2400), Twilight(2000), Super Tolo(1750), Swift Rider(13
 - Firebase cloud sync (manual via sync, auto on reconnect)
 
 ## UI / Design
-- **Primary targets:** 15.6" laptop + 14" Dell Latitude 7420 (1920×1080, ~125% scale = ~1536px effective)
-- **Mobile:** phone view supported via `@media(max-width:640px)` — fields stack, nav wraps
+- **Primary targets:** 15.6" laptop + 14" Dell Latitude 7420 (1920×1080, 125-150% scale)
+- **Responsive breakpoints:**
+  - Desktop: 4-column car grid, full nav
+  - ≤1280px (14" at 150%): 3-column grid, compact nav
+  - ≤1024px: 2-column grid, nav-right wraps to second row
+  - ≤640px (mobile): stacked fields, 2-column grid, compact everything
+- No inline max-widths — all sizing via CSS classes + media queries
+- `body{overflow-x:hidden}` prevents horizontal scroll
+- `topnav{flex-wrap:wrap}` with reduced padding/font for tighter viewports
+- `.print-wrap{overflow-x:auto}` so A4 preview scrolls inside container
 - Dark navy nav (`#1a1a2e`), white entry card, dark log background
 - Font: DM Sans (Google Fonts)
-- Car grid: 4 columns desktop, 2 columns mobile
 - Sticky top nav
 - Green sync dot = online, Red = offline
 
