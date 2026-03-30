@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>⭐ Little Star — Sales & Invoice</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -434,9 +437,10 @@ function doSync(){
   const priceHistory=getPriceHistory();
   const syncTime=new Date().toISOString();
   _justPushed=true;setTimeout(()=>{_justPushed=false},5000);
-  FB_REF.set({salesLog,prices:priceData,ledger,priceHistory,lastSync:syncTime})
+  const payload=JSON.parse(JSON.stringify({salesLog:salesLog||[],prices:priceData,ledger,priceHistory,lastSync:syncTime}));
+  FB_REF.set(payload)
     .then(()=>{_lastKnownSync=syncTime;clearPendingSync();updateSyncDot();showToast('☁️ Synced!')})
-    .catch(()=>{markPendingSync();updateSyncDot()});
+    .catch((e)=>{markPendingSync();updateSyncDot();alert('Sync Error: '+e.message)});
 }
 function updateSyncDot(){
   const dot=document.getElementById('syncDot');
@@ -666,11 +670,11 @@ function init(){
   FB_REF.on('value',snap=>{
     try{
       const d=snap.val();
-      if(!d||!d.salesLog)return;
+      if(!d)return;
       if(_justPushed){_lastKnownSync=d.lastSync||'';return}
       if(d.lastSync&&d.lastSync!==_lastKnownSync){
         _lastKnownSync=d.lastSync;
-        salesLog=d.salesLog;DB.set('salesLog',salesLog);
+        salesLog=d.salesLog||[]; DB.set('salesLog',salesLog);
         if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}
         if(d.ledger){saveLedger(d.ledger)}
         if(d.priceHistory){savePriceHistory(d.priceHistory)}
