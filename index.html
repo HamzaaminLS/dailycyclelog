@@ -8,8 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <title>⭐ Little Star — Sales & Invoice</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -380,7 +379,7 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
         <div style="font-size:10px;color:#888;margin-top:4px" id="currentBillInfo"></div>
       </div>
       <div style="border-top:1.5px solid #eee;padding-top:14px">
-        <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">🔥 Firebase Config</div>
+        <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">☁️ Supabase Sync</div>
         <div style="font-size:11px;color:#666;margin-bottom:4px">Status: <span id="fbStatus" style="font-weight:700">Checking...</span></div>
       </div>
     </div>
@@ -399,22 +398,12 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 <div id="toast" class="toast hidden"></div>
 
 <script>
-// ── Firebase Config ──
-const firebaseConfig = {
-  apiKey: "AIzaSyB9QI4UnU_lbRoFUF_879yDHTA-qkh1rM0",
-  authDomain: "daily-sales-c55bd.firebaseapp.com",
-  databaseURL: "https://daily-sales-c55bd-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "daily-sales-c55bd",
-  storageBucket: "daily-sales-c55bd.firebasestorage.app",
-  messagingSenderId: "857858539153",
-  appId: "1:857858539153:web:3c80f50eb5a373e7db4930",
-  measurementId: "G-W6WPG8TWRQ"
-};
-firebase.initializeApp(firebaseConfig);
-const fbDB = firebase.database();
-const FB_REF = fbDB.ref('littlestar');
+// ── Supabase Config ──
+const SUPABASE_URL='https://juaxobsfkulmhheemxwb.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1YXhvYnNma3VsbWhoZWVteHdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTQ5MDAsImV4cCI6MjA5MDQ3MDkwMH0.vZYyV7s-0Rn6E_6AB0Xip5qnWcbY05NApIbc4WJ2u3A';
+const sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-// ── Offline Auto-Sync: push to Firebase when WiFi reconnects ──
+// ── Offline Auto-Sync: push to Supabase when WiFi reconnects ──
 let _pendingSync=false;
 function markPendingSync(){_pendingSync=true;try{localStorage.setItem('ls_pendingSync','1')}catch(e){}}
 function clearPendingSync(){_pendingSync=false;try{localStorage.removeItem('ls_pendingSync')}catch(e){}}
@@ -425,10 +414,10 @@ function doSync(){
   const priceHistory=getPriceHistory();
   const syncTime=new Date().toISOString();
   _dirty=true;
-  const payload=JSON.parse(JSON.stringify({salesLog:salesLog||[],prices:priceData,ledger,priceHistory,lastSync:syncTime}));
-  FB_REF.set(payload)
-    .then(()=>{_lastKnownSync=syncTime;_dirty=false;clearPendingSync();updateSyncDot();showToast('☁️ Synced!')})
-    .catch((e)=>{_dirty=false;markPendingSync();updateSyncDot();showToast('Sync Error: '+e.message)});
+  const payload={sales_log:salesLog||[],prices:priceData,ledger,price_history:priceHistory,last_sync:syncTime};
+  sbClient.from('littlestar').update(payload).eq('id',1)
+    .then(({error})=>{if(error)throw error;_lastKnownSync=syncTime;_dirty=false;clearPendingSync();updateSyncDot();showToast('☁️ Synced!')})
+    .catch((e)=>{_dirty=false;markPendingSync();updateSyncDot();showToast('Sync Error: '+(e.message||e))});
 }
 function updateSyncDot(){
   const dot=document.getElementById('syncDot');
@@ -437,14 +426,15 @@ function updateSyncDot(){
   else{dot.className='sync-dot sync-offline';dot.title='Offline — will sync when connected'}
 }
 function forceSync(){if(!navigator.onLine){showToast('📴 Offline — cannot sync');return}showToast('☁️ Syncing...');doSync()}
+function _supaFetch(){return sbClient.from('littlestar').select('*').eq('id',1).single()}
 window.addEventListener('online',()=>{updateSyncDot();if(hasPendingSync()){showToast('📶 Back online — syncing...');doSync()}});
 window.addEventListener('offline',()=>{updateSyncDot();showToast('📴 Offline — changes saved locally')});
 // Save on page close — prevent data loss during debounce
-function _emergencySave(){DB.set('salesLog',salesLog);if(navigator.onLine&&!_dirty){const priceData={};CAR_MODELS.forEach(c=>priceData[c.n]=c.p);const payload=JSON.parse(JSON.stringify({salesLog:salesLog||[],prices:priceData,ledger:getLedger(),priceHistory:getPriceHistory(),lastSync:new Date().toISOString()}));try{fetch(FB_REF.toString()+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true})}catch(e){markPendingSync()}}else if(!navigator.onLine){markPendingSync()}}
+function _emergencySave(){DB.set('salesLog',salesLog);if(navigator.onLine&&!_dirty){const priceData={};CAR_MODELS.forEach(c=>priceData[c.n]=c.p);const payload={sales_log:salesLog||[],prices:priceData,ledger:getLedger(),price_history:getPriceHistory(),last_sync:new Date().toISOString()};try{fetch(SUPABASE_URL+'/rest/v1/littlestar?id=eq.1',{method:'PATCH',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=minimal'},body:JSON.stringify(payload),keepalive:true})}catch(e){markPendingSync()}}else if(!navigator.onLine){markPendingSync()}}
 window.addEventListener('beforeunload',_emergencySave);
 window.addEventListener('pagehide',_emergencySave);
 // Re-sync on tab focus (catch missed updates after sleep/wake)
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){updateSyncDot();if(hasPendingSync()&&navigator.onLine){doSync()}else if(!_dirty&&navigator.onLine){FB_REF.once('value').then(snap=>{const d=snap.val();if(d&&d.lastSync&&d.lastSync!==_lastKnownSync){_lastKnownSync=d.lastSync;salesLog=d.salesLog||[];DB.set('salesLog',salesLog);if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices()}if(d.ledger)saveLedger(d.ledger);if(d.priceHistory)savePriceHistory(d.priceHistory);updateBadge();showToast('⬇️ Synced — '+d.salesLog.length+' sales')}}).catch(()=>{})}}else if(document.visibilityState==='hidden'){_emergencySave()}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){updateSyncDot();if(hasPendingSync()&&navigator.onLine){doSync()}else if(!_dirty&&navigator.onLine){_supaFetch().then(({data:d,error})=>{if(error||!d)return;if(d.last_sync&&d.last_sync!==_lastKnownSync){_lastKnownSync=d.last_sync;salesLog=d.sales_log||[];DB.set('salesLog',salesLog);if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices()}if(d.ledger)saveLedger(d.ledger);if(d.price_history)savePriceHistory(d.price_history);updateBadge();showToast('⬇️ Synced — '+salesLog.length+' sales')}})}}else if(document.visibilityState==='hidden'){_emergencySave()}});
 // Periodic retry for failed syncs (every 30s)
 setInterval(()=>{if(hasPendingSync()&&navigator.onLine&&!_dirty){doSync()}},30000);
 
@@ -510,7 +500,7 @@ function openSettings(){
   const cur=parseInt(localStorage.getItem('ls_billStart'))||1;
   document.getElementById('setBillStart').value=cur;
   document.getElementById('currentBillInfo').textContent='Bills are numbered per buyer. Start number: '+padSlip(cur);
-  try{document.getElementById('fbStatus').textContent=firebase.app()?'Connected':'Not configured';document.getElementById('fbStatus').style.color='#4caf50'}catch(e){document.getElementById('fbStatus').textContent='Not configured';document.getElementById('fbStatus').style.color='#f44336'}
+  try{document.getElementById('fbStatus').textContent=sbClient?'Connected':'Not configured';document.getElementById('fbStatus').style.color='#4caf50'}catch(e){document.getElementById('fbStatus').textContent='Not configured';document.getElementById('fbStatus').style.color='#f44336'}
   document.getElementById('settingsModal').classList.remove('hidden');
 }
 function closeSettings(){document.getElementById('settingsModal').classList.add('hidden')}
@@ -661,28 +651,28 @@ function init(){
   updateBadge();updateSyncDot();
   ENTRY_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',entryFieldKey)});
 
-  // Real-time Firebase listener — syncs new entries, edits, and deletes
-  FB_REF.on('value',snap=>{
+  // Real-time Supabase listener — syncs new entries, edits, and deletes
+  sbClient.channel('littlestar-sync').on('postgres_changes',{event:'UPDATE',schema:'public',table:'littlestar'},payload=>{
     try{
-      const d=snap.val();
+      const d=payload.new;
       if(!d)return;
-      if(_dirty){_lastKnownSync=d.lastSync||'';return}
-      if(hasPendingSync()){_lastKnownSync=d.lastSync||'';return}
-      if(!d.salesLog){_lastKnownSync=d.lastSync||'';return}
-      if(d.lastSync&&d.lastSync!==_lastKnownSync){
-        _lastKnownSync=d.lastSync;
-        salesLog=d.salesLog; DB.set('salesLog',salesLog);
+      if(_dirty){_lastKnownSync=d.last_sync||'';return}
+      if(hasPendingSync()){_lastKnownSync=d.last_sync||'';return}
+      if(!d.sales_log){_lastKnownSync=d.last_sync||'';return}
+      if(d.last_sync&&d.last_sync!==_lastKnownSync){
+        _lastKnownSync=d.last_sync;
+        salesLog=d.sales_log; DB.set('salesLog',salesLog);
         if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}
         if(d.ledger){saveLedger(d.ledger)}
-        if(d.priceHistory){savePriceHistory(d.priceHistory)}
+        if(d.price_history){savePriceHistory(d.price_history)}
         updateBadge();
         const lv=document.getElementById('viewLog');if(lv&&!lv.classList.contains('hidden'))renderLog();
         const sv=document.getElementById('viewSummary');if(sv&&!sv.classList.contains('hidden'))renderSummary();
         const mv=document.getElementById('viewMonthly');if(mv&&!mv.classList.contains('hidden'))renderMonthlyBills();
         showToast('⬇️ Synced — '+salesLog.length+' sales');
       }
-    }catch(e){console.log('Firebase listener error:',e)}
-  });
+    }catch(e){console.log('Supabase listener error:',e)}
+  }).subscribe();
 }
 
 function updateDateDisplay(){const v=document.getElementById('inpDate').value;document.getElementById('dateDisplay').textContent=v?fmtD(v)+' • '+fmtTime():'';const wIdx=document.getElementById('inpWholesaler').value;if(wIdx!==''){const w=WHOLESALERS[parseInt(wIdx)];document.getElementById('inpSlip').value=getNextSlip(w.n)}else{document.getElementById('inpSlip').value=''}}
