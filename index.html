@@ -667,10 +667,11 @@ function init(){
       const d=snap.val();
       if(!d)return;
       if(_dirty){_lastKnownSync=d.lastSync||'';return}
-      if(hasPendingSync()){_lastKnownSync=d.lastSync||'';doSync();return}
+      if(hasPendingSync()){_lastKnownSync=d.lastSync||'';return}
+      if(!d.salesLog){_lastKnownSync=d.lastSync||'';return}
       if(d.lastSync&&d.lastSync!==_lastKnownSync){
         _lastKnownSync=d.lastSync;
-        salesLog=d.salesLog||[]; DB.set('salesLog',salesLog);
+        salesLog=d.salesLog; DB.set('salesLog',salesLog);
         if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}
         if(d.ledger){saveLedger(d.ledger)}
         if(d.priceHistory){savePriceHistory(d.priceHistory)}
@@ -678,7 +679,7 @@ function init(){
         const lv=document.getElementById('viewLog');if(lv&&!lv.classList.contains('hidden'))renderLog();
         const sv=document.getElementById('viewSummary');if(sv&&!sv.classList.contains('hidden'))renderSummary();
         const mv=document.getElementById('viewMonthly');if(mv&&!mv.classList.contains('hidden'))renderMonthlyBills();
-        showToast('⬇️ Synced — '+d.salesLog.length+' sales');
+        showToast('⬇️ Synced — '+salesLog.length+' sales');
       }
     }catch(e){console.log('Firebase listener error:',e)}
   });
