@@ -277,7 +277,7 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
     <button class="nbtn-sm" onclick="document.getElementById('restoreFile').click()">📂 Restore</button>
     <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
     <button class="nbtn-sm" onclick="openSettings()">⚙️ Settings</button>
-    <span id="syncDot" class="sync-dot sync-offline" title="Checking..."></span>
+    <span id="syncDot" class="sync-dot sync-offline" title="Checking..." onclick="forceSync()" style="cursor:pointer"></span>
   </div>
 </div>
 
@@ -444,6 +444,7 @@ function updateSyncDot(){
   if(navigator.onLine){dot.className='sync-dot sync-online';dot.title='Online'+(hasPendingSync()?' (syncing...)':' — synced')}
   else{dot.className='sync-dot sync-offline';dot.title='Offline — will sync when connected'}
 }
+function forceSync(){if(!navigator.onLine){showToast('📴 Offline — cannot sync');return}showToast('☁️ Syncing...');doSync()}
 window.addEventListener('online',()=>{updateSyncDot();if(hasPendingSync()){showToast('📶 Back online — syncing...');doSync()}});
 window.addEventListener('offline',()=>{updateSyncDot();showToast('📴 Offline — changes saved locally')});
 
@@ -495,19 +496,20 @@ function todayStr(){return new Date().toISOString().split('T')[0]}
 function fmtTime(d){try{const dt=d?new Date(d):new Date();let h=dt.getHours();const m=String(dt.getMinutes()).padStart(2,'0');const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+' '+ap}catch(e){return''}}
 function nowTimeStr(){return new Date().toISOString()}
 function padSlip(n){return String(n).padStart(4,'0')}
-function getNextSlip(){
+function getNextSlip(wholesalerName){
   const startNum=parseInt(localStorage.getItem('ls_billStart'))||1;
-  if(!salesLog.length)return padSlip(startNum);
+  if(!wholesalerName)return '';
+  const whoSales=salesLog.filter(s=>s.wholesaler===wholesalerName);
+  if(!whoSales.length)return padSlip(startNum);
   let mx=0;
-  salesLog.forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});
+  whoSales.forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});
   return padSlip(Math.max(mx+1,startNum));
 }
 // ── Settings ──
 function openSettings(){
   const cur=parseInt(localStorage.getItem('ls_billStart'))||1;
   document.getElementById('setBillStart').value=cur;
-  let mx=0;salesLog.forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});
-  document.getElementById('currentBillInfo').textContent='Current highest bill: '+padSlip(mx)+' | Next bill: '+padSlip(Math.max(mx+1,cur));
+  document.getElementById('currentBillInfo').textContent='Bills are numbered per buyer. Start number: '+padSlip(cur);
   try{document.getElementById('fbStatus').textContent=firebase.app()?'Connected':'Not configured';document.getElementById('fbStatus').style.color='#4caf50'}catch(e){document.getElementById('fbStatus').textContent='Not configured';document.getElementById('fbStatus').style.color='#f44336'}
   document.getElementById('settingsModal').classList.remove('hidden');
 }
@@ -658,8 +660,8 @@ function init(){
   CAR_MODELS.forEach((car,i)=>{const d=document.createElement('div');d.className='cr';d.id='cr-'+i;d.innerHTML='<span class="cname">'+car.n+'</span><input type="number" min="0" placeholder="0" id="qty-'+i+'" oninput="onQtyChange('+i+')" onfocus="onQtyFocus('+i+')" onblur="onQtyBlur('+i+')" onkeydown="onQtyKey(event,'+i+')">';grid.appendChild(d)});
   updateBadge();updateSyncDot();
   ENTRY_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',entryFieldKey)});
-  // Auto-sync pending changes on startup
-  if(navigator.onLine&&hasPendingSync()){setTimeout(()=>doSync(),2000)}
+  // Auto-sync on startup — always push to ensure Firebase has latest data
+  if(navigator.onLine&&salesLog.length){setTimeout(()=>doSync(),2000)}
   // Real-time Firebase listener — syncs new entries, edits, and deletes
   FB_REF.on('value',snap=>{
     try{
@@ -682,8 +684,8 @@ function init(){
   });
 }
 
-function updateDateDisplay(){const v=document.getElementById('inpDate').value;document.getElementById('dateDisplay').textContent=v?fmtD(v)+' • '+fmtTime():'';document.getElementById('inpSlip').value=getNextSlip()}
-function onBuyerChange(){const idx=document.getElementById('inpWholesaler').value;if(idx!==''){const w=WHOLESALERS[parseInt(idx)];document.getElementById('inpCity').value=w.c;document.getElementById('inpSlip').value=getNextSlip()}else{document.getElementById('inpCity').value='';document.getElementById('inpSlip').value=''}checkReady()}
+function updateDateDisplay(){const v=document.getElementById('inpDate').value;document.getElementById('dateDisplay').textContent=v?fmtD(v)+' • '+fmtTime():'';const wIdx=document.getElementById('inpWholesaler').value;if(wIdx!==''){const w=WHOLESALERS[parseInt(wIdx)];document.getElementById('inpSlip').value=getNextSlip(w.n)}else{document.getElementById('inpSlip').value=''}}
+function onBuyerChange(){const idx=document.getElementById('inpWholesaler').value;if(idx!==''){const w=WHOLESALERS[parseInt(idx)];document.getElementById('inpCity').value=w.c;document.getElementById('inpSlip').value=getNextSlip(w.n)}else{document.getElementById('inpCity').value='';document.getElementById('inpSlip').value=''}checkReady()}
 function onQtyChange(i){const q=parseInt(document.getElementById('qty-'+i).value)||0;document.getElementById('cr-'+i).classList.toggle('active',q>0);checkReady()}
 function onQtyFocus(i){document.getElementById('cr-'+i).classList.add('focused')}
 function onQtyBlur(i){document.getElementById('cr-'+i).classList.remove('focused')}
@@ -773,7 +775,7 @@ function renderLog(){
 }
 function clearFilters(){logPage=0;logMonth='';document.getElementById('filterWho').value='';document.getElementById('filterFrom').value='';document.getElementById('filterTo').value='';renderLog()}
 function resetAllFilters(){logPage=0;logMonth='';renderLog()}
-function confirmDelete(id){const s=salesLog.find(x=>x.id===id);if(!s)return;const sNum=parseInt(s.slipNo)||0;let mx=0;salesLog.forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});const isLast=sNum===mx;const msg='Delete this sale?\nBill No: '+(s.slipNo||'N/A')+'\n'+fmtD(s.date)+' — '+s.wholesaler+' — '+s.totalUnits+' units'+(isLast?'\n\nNext new bill will revert to #'+s.slipNo:'\n\nThis cannot be undone.');if(confirm(msg)){salesLog=salesLog.filter(x=>x.id!==id);save();updateBadge();renderLog();document.getElementById('inpSlip').value=getNextSlip();showToast(isLast?'🗑️ Deleted — Next bill reverts to #'+s.slipNo:'🗑️ Deleted')}}
+function confirmDelete(id){const s=salesLog.find(x=>x.id===id);if(!s)return;const sNum=parseInt(s.slipNo)||0;let mx=0;salesLog.filter(x=>x.wholesaler===s.wholesaler).forEach(x=>{const n=parseInt(x.slipNo)||0;if(n>mx)mx=n});const isLast=sNum===mx;const msg='Delete this sale?\nBill No: '+(s.slipNo||'N/A')+'\n'+fmtD(s.date)+' — '+s.wholesaler+' — '+s.totalUnits+' units'+(isLast?'\n\nNext '+s.wholesaler+' bill will revert to #'+s.slipNo:'\n\nThis cannot be undone.');if(confirm(msg)){salesLog=salesLog.filter(x=>x.id!==id);save();updateBadge();renderLog();const wIdx=document.getElementById('inpWholesaler').value;if(wIdx!==''){document.getElementById('inpSlip').value=getNextSlip(WHOLESALERS[parseInt(wIdx)].n)}else{document.getElementById('inpSlip').value=''}showToast(isLast?'🗑️ Deleted — Next '+s.wholesaler+' bill reverts to #'+s.slipNo:'🗑️ Deleted')}}
 function reprintSale(id){const s=salesLog.find(x=>x.id===id);if(!s)return;currentSale=s;renderPrintPreview(s);showView('print')}
 
 function openEditModal(id){
