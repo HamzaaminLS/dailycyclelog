@@ -2,7 +2,8 @@
 
 ## Project Overview
 Single-file web app (`index.html`) for Little Star kids vehicle factory in Karachi, Pakistan.
-Used daily on a **15.6" laptop in Chrome** to generate invoices, track sales logs, and manage wholesaler ledger.
+Used daily on a **15.6" laptop + 14" Dell Latitude 7420 in Chrome** to generate invoices, track sales logs, and manage wholesaler ledger.
+Also viewed on **phone** (read-only, real-time sync via Firebase).
 
 ## File
 - **Main file:** `index.html` (was previously `LittleStar_Daily_Sales_ver_4.html`)
@@ -11,12 +12,16 @@ Used daily on a **15.6" laptop in Chrome** to generate invoices, track sales log
 
 ## Database
 - **Primary:** `localStorage` — keys prefixed with `ls_` (salesLog, prices, ledger, priceHistory, etc.)
-- **Cloud backup:** Firebase Realtime Database — **Southeast Asia region**
+- **Cloud:** Firebase Realtime Database — **Southeast Asia region**
   - URL: `https://daily-sales-c55bd-default-rtdb.asia-southeast1.firebasedatabase.app`
   - Project ID: `daily-sales-c55bd`
   - Ref: `fbDB.ref('littlestar')`
   - `apiKey` and `appId` still need to be filled in by user
-- **Offline auto-sync:** When factory WiFi is down, data saves locally. When laptop reconnects, it auto-pushes to Firebase. Green/red dot in nav bar shows status.
+  - **Real-time listener:** `FB_REF.on('value', ...)` — phone sees changes instantly when laptop saves
+  - `_justPushed` flag (5s) prevents listener echo after own push
+  - Save debounce: 1000ms (was 3000ms)
+  - ~50 entries/day — well within Firebase free (Spark) plan limits
+- **Offline auto-sync:** saves locally when offline, auto-pushes on reconnect. Green/red dot in nav.
 
 ## Key Data Structures
 
@@ -98,10 +103,11 @@ Sprinter(2750), Stroller(2400), Twilight(2000), Super Tolo(1750), Swift Rider(13
 - Firebase cloud sync (manual via sync, auto on reconnect)
 
 ## UI / Design
-- **Target:** 15.6" laptop, Chrome browser
+- **Primary targets:** 15.6" laptop + 14" Dell Latitude 7420 (1920×1080, ~125% scale = ~1536px effective)
+- **Mobile:** phone view supported via `@media(max-width:640px)` — fields stack, nav wraps
 - Dark navy nav (`#1a1a2e`), white entry card, dark log background
 - Font: DM Sans (Google Fonts)
-- Car grid: 4 columns, fills available height with scroll
+- Car grid: 4 columns desktop, 2 columns mobile
 - Sticky top nav
 - Green sync dot = online, Red = offline
 
@@ -126,10 +132,11 @@ git push
 ```
 
 ## Important Notes
-- The file is large (~830 lines), reading it in chunks of 10-15 lines at a time is needed
+- The file is large (~860 lines), reading it in chunks using offset/limit is needed
 - Use `Grep` to find specific functions before reading/editing
 - All JS is minified/compact — functions are on single lines
 - `fmtD(dateStr)` → DD/MM/YYYY, `fmtTime(isoStr)` → H:MM AM/PM
-- `save()` handles both localStorage + Firebase sync
+- `save()` handles both localStorage + Firebase sync (1s debounce)
 - `doSync()` is the direct Firebase push function
 - Invoice print opens in new window with embedded CSS
+- **Always commit and push to git after every code change**

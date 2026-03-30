@@ -417,6 +417,7 @@ function doSync(){
   const priceData={};CAR_MODELS.forEach(c=>priceData[c.n]=c.p);
   const ledger=getLedger();
   const priceHistory=getPriceHistory();
+  _justPushed=true;setTimeout(()=>{_justPushed=false},5000);
   FB_REF.set({salesLog,prices:priceData,ledger,priceHistory,lastSync:new Date().toISOString()})
     .then(()=>{clearPendingSync();updateSyncDot();showToast('☁️ Synced to cloud!')})
     .catch(()=>{markPendingSync();updateSyncDot()});
@@ -455,14 +456,14 @@ const DB={_m:{},get(k){try{const v=localStorage.getItem('ls_'+k);return v?JSON.p
 let salesLog=DB.get('salesLog')||[];
 let currentSale=null;let editingSaleId=null;let logPage=0;let logMonth='';const PAGE_SIZE=50;
 
-let _fbTimer=null;
+let _fbTimer=null;let _justPushed=false;
 function save(){
   DB.set('salesLog',salesLog);
   clearTimeout(_fbTimer);
   _fbTimer=setTimeout(()=>{
     if(navigator.onLine){doSync()}
     else{markPendingSync();updateSyncDot();showToast('💾 Saved locally (offline)')}
-  },3000);
+  },1000);
 }
 const fmt=n=>(n||0).toLocaleString('en-PK');
 
@@ -643,16 +644,20 @@ function init(){
   ENTRY_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',entryFieldKey)});
   // Auto-sync pending changes on startup
   if(navigator.onLine&&hasPendingSync()){setTimeout(()=>doSync(),2000)}
-  // Firebase pull on load
-  FB_REF.once('value').then(snap=>{
-    const d=snap.val();
-    if(d&&d.salesLog&&d.salesLog.length>salesLog.length){
-      salesLog=d.salesLog;DB.set('salesLog',salesLog);
-      if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}
-      if(d.ledger){saveLedger(d.ledger)}
-      updateBadge();renderLog&&renderLog();showToast('⬇️ Synced '+d.salesLog.length+' sales from cloud');
-    }
-  }).catch(e=>console.log('Firebase pull failed:',e));
+  // Real-time Firebase listener — phone sees changes instantly
+  FB_REF.on('value',snap=>{
+    try{
+      const d=snap.val();
+      if(!d||!d.salesLog)return;
+      if(_justPushed)return;
+      if(d.salesLog.length>salesLog.length){
+        salesLog=d.salesLog;DB.set('salesLog',salesLog);
+        if(d.prices){CAR_MODELS.forEach(c=>{if(d.prices[c.n]!==undefined)c.p=d.prices[c.n]});rebuildPrices();try{localStorage.setItem('ls_prices',JSON.stringify(d.prices))}catch(e){}}
+        if(d.ledger){saveLedger(d.ledger)}
+        updateBadge();if(typeof renderLog==='function')renderLog();showToast('⬇️ '+d.salesLog.length+' sales synced');
+      }
+    }catch(e){console.log('Firebase listener error:',e)}
+  });
 }
 
 function updateDateDisplay(){const v=document.getElementById('inpDate').value;document.getElementById('dateDisplay').textContent=v?fmtD(v)+' • '+fmtTime():'';document.getElementById('inpSlip').value=getNextSlip()}
