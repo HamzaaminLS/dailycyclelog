@@ -65,8 +65,8 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 .cr{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#f6f6fb;border:1.5px solid transparent;transition:all .1s}
 .cr.active{background:#eef6ee;border-color:#4caf50}
 .cr.focused{box-shadow:0 0 0 2px rgba(26,26,46,.25);border-color:#1a1a2e}
-.cr .cname{flex:1;font-size:13.5px;font-weight:600;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cr input{width:62px;padding:7px;border:1.5px solid #ddd;border-radius:6px;text-align:center;font-size:14px;font-weight:600;font-family:inherit;outline:none}
+.cr .cname{flex:1;font-size:15px;font-weight:700;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr input{width:60px;padding:6px;border:1.5px solid #ddd;border-radius:6px;text-align:center;font-size:14px;font-weight:600;font-family:inherit;outline:none}
 .cr input:focus{border-color:#1a1a2e;box-shadow:0 0 0 2px rgba(26,26,46,.1)}
 
 /* Buyer autocomplete */
@@ -133,8 +133,8 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 .log-card{background:#fff;border-radius:11px;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .log-head{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;background:#f8f8fc;border-bottom:1px solid #eee;flex-wrap:wrap;gap:6px}
 .lh-left{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.ldate{font-weight:700;font-size:14px;color:#1a1a2e}
-.lwho{font-size:13.5px;color:#555}
+.ldate{font-weight:700;font-size:15px;color:#1a1a2e}
+.lwho{font-size:15px;font-weight:600;color:#333}
 .lslip{font-size:12.5px;color:#1a1a2e;background:#e0e0f0;padding:3px 10px;border-radius:5px;font-weight:800;letter-spacing:.5px}
 .lunits{font-size:12.5px;font-weight:700;color:#1a1a2e;background:#e8f5e9;padding:2px 9px;border-radius:4px}
 .lprice-tag{font-size:11.5px;font-weight:600;color:#e67e22;background:#fef5e7;padding:2px 8px;border-radius:4px}
@@ -206,6 +206,11 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 
 .toast{position:fixed;bottom:18px;right:18px;background:#1a1a2e;color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:0 3px 16px rgba(0,0,0,.3);z-index:60;animation:toastAnim 2.5s forwards;pointer-events:none}
 @keyframes toastAnim{0%{opacity:0;transform:translateY(10px)}8%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateY(-5px)}}
+
+/* MANAGEMENT BAR */
+.dash-mgmt{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.dmgmt-btn{padding:9px 18px;border-radius:8px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.14);color:rgba(255,255,255,.85);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.dmgmt-btn:hover{background:rgba(255,255,255,.13);color:#fff;border-color:rgba(255,255,255,.3)}
 
 /* TABLET — 14" Dell 7420 at 150% scaling (~1280px) */
 @media(max-width:1280px){
@@ -281,7 +286,7 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
 <body>
 
 <div class="topnav">
-  <div class="brand"><img src="" style="width:28px;height:auto" alt="" id="navLogo"> Little Star</div>
+  <div class="brand"><img id="navLogo" style="width:28px;height:auto" alt="Logo"> Little Star</div>
   <button class="tab tab-on" id="tabEntry" onclick="showView('entry')">📝 New Sale</button>
   <button class="tab tab-off" id="tabLog" onclick="showView('log')">📋 Sales Log <span class="badge hidden" id="logBadge">0</span></button>
   <button class="tab tab-off" id="tabSummary" onclick="showView('summary')">📊 Today</button>
@@ -290,15 +295,18 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
     <button class="nbtn-sm" onclick="openLedger()">📒 Ledger</button>
     <button class="nbtn-sm" onclick="openPriceManager()">💰 Prices</button>
     <button class="nbtn-sm" id="btnExport" disabled onclick="exportExcel()">📥 Export</button>
-    <button class="nbtn-sm" onclick="backupData()">💾 Backup</button>
-    <button class="nbtn-sm" onclick="document.getElementById('restoreFile').click()">📂 Restore</button>
-    <input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
     <button class="nbtn-sm" onclick="openSettings()">⚙️ Settings</button>
     <span id="syncDot" class="sync-dot sync-offline" title="Checking..." onclick="forceSync()" style="cursor:pointer"></span>
   </div>
 </div>
 
 <div id="viewEntry" class="entry-wrap">
+  <div class="dash-mgmt">
+    <button class="dmgmt-btn" onclick="openPriceManager()">💰 Prices</button>
+    <button class="dmgmt-btn" onclick="openSettings('models')">🚗 Car Models</button>
+    <button class="dmgmt-btn" onclick="openSettings('buyers')">🤝 Buyers</button>
+    <button class="dmgmt-btn" onclick="openLedger()">📒 Ledger</button>
+  </div>
   <div class="entry-card">
     <div class="entry-top">
       <h2>📝 Sales Entry</h2>
@@ -392,14 +400,25 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
     <div class="modal-bd" id="settingsBody">
       <div style="margin-bottom:16px">
         <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">🧾 Bill Number Counter</div>
-        <div style="font-size:11px;color:#666;margin-bottom:8px">Reset the bill counter at the start of each year. Bills will start from the number you set.</div>
+        <div style="font-size:11px;color:#666;margin-bottom:8px">Global bill start — used for all buyers unless overridden below.</div>
         <div style="display:flex;gap:8px;align-items:center">
           <input type="number" id="setBillStart" min="1" placeholder="1" style="padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:13px;width:100px;font-family:inherit">
-          <button class="btn-save" onclick="applyBillReset()">Reset Bill Counter</button>
+          <button class="btn-save" onclick="applyBillReset()">Reset Global Counter</button>
         </div>
         <div style="font-size:10px;color:#888;margin-top:4px" id="currentBillInfo"></div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #ddd">
+          <div style="font-size:11px;font-weight:800;color:#1a1a2e;margin-bottom:6px">Per-Buyer Bill Start <span style="font-weight:400;color:#888">(optional — overrides global)</span></div>
+          <div id="billStartMapList" style="margin-bottom:8px"></div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <select id="billStartWho" style="flex:1;min-width:130px;padding:7px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit">
+              <option value="">— Select Buyer —</option>
+            </select>
+            <input type="number" id="billStartNum" min="1" placeholder="e.g. 500" style="width:90px;padding:7px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit">
+            <button class="btn-save" style="font-size:11px;padding:6px 12px" onclick="applyWholesalerBillStart()">Set</button>
+          </div>
+        </div>
       </div>
-      <div style="border-top:1.5px solid #eee;padding-top:14px;margin-bottom:16px">
+      <div id="settingsSectionModels" style="border-top:1.5px solid #eee;padding-top:14px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">🚗 Car Models</div>
         <div style="font-size:11px;color:#666;margin-bottom:8px">Add or remove car models. Changes apply to new sales.</div>
         <div id="settingsCarModels"></div>
@@ -409,7 +428,7 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
           <button class="btn-save" style="font-size:11px;padding:6px 12px" onclick="addCarModel()">+ Add</button>
         </div>
       </div>
-      <div style="border-top:1.5px solid #eee;padding-top:14px;margin-bottom:16px">
+      <div id="settingsSectionBuyers" style="border-top:1.5px solid #eee;padding-top:14px;margin-bottom:16px">
         <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">🤝 Wholesaler Management</div>
         <div style="font-size:11px;color:#666;margin-bottom:8px">Add or remove wholesalers.</div>
         <div id="settingsWholesalers" style="max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
@@ -438,6 +457,14 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="psetTagline" checked onchange="savePrintSettings()" style="width:15px;height:15px"> Show tagline on invoice</label>
         </div>
       </div>
+      <div style="border-top:1.5px solid #eee;padding-top:14px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">💾 Backup & Restore</div>
+        <div style="font-size:11px;color:#666;margin-bottom:8px">Download a full backup or restore from a previous backup file.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-save" onclick="backupData()">💾 Download Backup</button>
+          <button class="btn-save" style="background:#e67e22" onclick="document.getElementById('restoreFile').click()">📂 Restore from Backup</button>
+        </div>
+      </div>
       <div style="border-top:1.5px solid #eee;padding-top:14px">
         <div style="font-size:12px;font-weight:800;color:#1a1a2e;margin-bottom:6px">☁️ Supabase Sync</div>
         <div style="font-size:11px;color:#666;margin-bottom:4px">Status: <span id="fbStatus" style="font-weight:700">Checking...</span></div>
@@ -456,6 +483,7 @@ body{font-family:'DM Sans','Segoe UI',sans-serif;background:#0f0f1a;color:#222;m
   </div>
 </div>
 
+<input type="file" id="restoreFile" accept=".json" class="hidden" onchange="restoreData(event)">
 <div id="toast" class="toast hidden"></div>
 
 <script>
@@ -554,8 +582,12 @@ function todayStr(){return new Date().toISOString().split('T')[0]}
 function fmtTime(d){try{const dt=d?new Date(d):new Date();let h=dt.getHours();const m=String(dt.getMinutes()).padStart(2,'0');const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+m+'\u00A0'+ap}catch(e){return''}}
 function nowTimeStr(){return new Date().toISOString()}
 function padSlip(n){return String(n).padStart(4,'0')}
+function getBillStartMap(){try{return JSON.parse(localStorage.getItem('ls_billStartMap'))||{}}catch(e){return{}}}
+function saveBillStartMap(m){try{localStorage.setItem('ls_billStartMap',JSON.stringify(m))}catch(e){}}
 function getNextSlip(wholesalerName){
-  const startNum=parseInt(localStorage.getItem('ls_billStart'))||1;
+  const globalStart=parseInt(localStorage.getItem('ls_billStart'))||1;
+  const whoMap=getBillStartMap();
+  const startNum=whoMap[wholesalerName]?parseInt(whoMap[wholesalerName]):globalStart;
   if(!wholesalerName)return '';
   const whoSales=salesLog.filter(s=>s.wholesaler===wholesalerName);
   if(!whoSales.length)return padSlip(startNum);
@@ -569,15 +601,17 @@ function getPrintSettings(){try{return JSON.parse(localStorage.getItem('ls_print
 function savePrintSettings(){const s={logo:document.getElementById('psetLogo').checked,tagline:document.getElementById('psetTagline').checked};try{localStorage.setItem('ls_printSettings',JSON.stringify(s))}catch(e){}}
 
 // ── Settings ──
-function openSettings(){
+function openSettings(section){
   const cur=parseInt(localStorage.getItem('ls_billStart'))||1;
   document.getElementById('setBillStart').value=cur;
-  document.getElementById('currentBillInfo').textContent='Bills are numbered per buyer. Start number: '+padSlip(cur);
+  document.getElementById('currentBillInfo').textContent='Global start: '+padSlip(cur)+' • Bills numbered per buyer.';
   try{document.getElementById('fbStatus').textContent=sbClient?'Connected (Real-time)':'Not configured';document.getElementById('fbStatus').style.color='#4caf50'}catch(e){document.getElementById('fbStatus').textContent='Not configured';document.getElementById('fbStatus').style.color='#f44336'}
   // Print settings
   const ps=getPrintSettings();
   document.getElementById('psetLogo').checked=ps.logo!==false;
   document.getElementById('psetTagline').checked=ps.tagline!==false;
+  // Per-wholesaler bill start
+  renderBillStartMap();
   // Car models list
   renderSettingsCarModels();
   // Wholesalers list
@@ -585,8 +619,39 @@ function openSettings(){
   // Archive
   renderArchiveOptions();
   document.getElementById('settingsModal').classList.remove('hidden');
+  // Scroll to section if requested
+  if(section){
+    const sectionMap={models:'settingsSectionModels',buyers:'settingsSectionBuyers'};
+    const el=document.getElementById(sectionMap[section]);
+    if(el)setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),150);
+  }
 }
 function closeSettings(){document.getElementById('settingsModal').classList.add('hidden')}
+
+function renderBillStartMap(){
+  const m=getBillStartMap();
+  const whoSel=document.getElementById('billStartWho');
+  if(whoSel){whoSel.innerHTML='<option value="">— Select Buyer —</option>';WHOLESALERS.forEach(w=>{whoSel.innerHTML+='<option value="'+w.n+'">'+w.n+' ('+w.c+')</option>'})}
+  const el=document.getElementById('billStartMapList');if(!el)return;
+  const keys=Object.keys(m);
+  if(!keys.length){el.innerHTML='<div style="font-size:10.5px;color:#999">No per-buyer overrides set.</div>';return}
+  let h='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+  keys.forEach(name=>{h+='<span style="display:inline-flex;align-items:center;gap:4px;background:#e8f0fe;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700">'+name+': <b style="color:#1a1a2e">'+padSlip(m[name])+'</b> <button onclick="removeWholesalerBillStart(\''+name.replace(/'/g,"\\'")+'\''+')" style="background:none;border:none;color:#d32f2f;cursor:pointer;font-size:11px;font-weight:800;padding:0 2px">✕</button></span>'});
+  h+='</div>';el.innerHTML=h;
+}
+function applyWholesalerBillStart(){
+  const name=document.getElementById('billStartWho').value;
+  const num=parseInt(document.getElementById('billStartNum').value)||0;
+  if(!name){alert('Select a buyer');return}
+  if(!num||num<1){alert('Enter a valid start number');return}
+  const m=getBillStartMap();m[name]=num;saveBillStartMap(m);
+  document.getElementById('billStartNum').value='';
+  renderBillStartMap();
+  showToast('✅ '+name+' bills start from '+padSlip(num));
+}
+function removeWholesalerBillStart(name){
+  const m=getBillStartMap();delete m[name];saveBillStartMap(m);renderBillStartMap();showToast('🗑️ Removed override for '+name);
+}
 function applyBillReset(){
   const n=parseInt(document.getElementById('setBillStart').value)||1;
   localStorage.setItem('ls_billStart',n);
@@ -859,7 +924,7 @@ function printLedgerSummary(){
   const grandBal=grandSales-grandPaid;
   const ps=getPrintSettings();
   const w=window.open('','_blank','width=800,height=600');
-  w.document.write('<!DOCTYPE html><html><head><title>All Balances</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet"><style>@page{size:A4 portrait;margin:10mm}*{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans",sans-serif}body{padding:10mm}h1{font-size:18pt;font-weight:800;text-align:center;margin-bottom:2mm}.sub{text-align:center;font-size:9pt;color:#666;margin-bottom:6mm}.sep{height:2px;background:#000;margin:4mm 0}table{width:100%;border-collapse:collapse;font-size:9pt}th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase}td{padding:2mm 3mm;border-bottom:.5px solid #ddd;font-weight:600}tr:nth-child(even) td{background:#f8f8fc}.trow td{border-top:2px solid #000;font-weight:800;font-size:10pt;background:#e8e8f8!important}.r{text-align:right}.c{text-align:center}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+(ps.logo!==false?'<div style="text-align:center;margin-bottom:2mm"><img src="'+LOGO_BASE64+'" style="width:14mm;height:auto"></div>':'')+'<h1>Little Star</h1><div class="sub">Wholesaler Balance Summary — '+fmtD(todayStr())+'</div><div class="sep"></div><table><thead><tr><th class="c">#</th><th>Wholesaler</th><th class="r">Total Sales</th><th class="r">Total Paid</th><th class="r">Balance</th></tr></thead><tbody>'+rows+'<tr class="trow"><td></td><td>GRAND TOTAL</td><td class="r">PKR '+fmt(grandSales)+'</td><td class="r">PKR '+fmt(grandPaid)+'</td><td class="r" style="color:'+(grandBal>0?'red':'green')+'">PKR '+fmt(Math.abs(grandBal))+(grandBal>0?' Due':'')+'</td></tr></tbody></table></body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>All Balances</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet"><style>@page{size:A4 portrait;margin:0}*{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans",sans-serif}body{padding:10mm}h1{font-size:18pt;font-weight:800;text-align:center;margin-bottom:2mm}.sub{text-align:center;font-size:9pt;color:#666;margin-bottom:6mm}.sep{height:2px;background:#000;margin:4mm 0}table{width:100%;border-collapse:collapse;font-size:9pt}th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase}td{padding:2mm 3mm;border-bottom:.5px solid #ddd;font-weight:600}tr:nth-child(even) td{background:#f8f8fc}.trow td{border-top:2px solid #000;font-weight:800;font-size:10pt;background:#e8e8f8!important}.r{text-align:right}.c{text-align:center}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+(ps.logo!==false?'<div style="text-align:center;margin-bottom:2mm"><img src="'+LOGO_BASE64+'" style="width:14mm;height:auto"></div>':'')+'<h1>Little Star</h1><div class="sub">Wholesaler Balance Summary — '+fmtD(todayStr())+'</div><div class="sep"></div><table><thead><tr><th class="c">#</th><th>Wholesaler</th><th class="r">Total Sales</th><th class="r">Total Paid</th><th class="r">Balance</th></tr></thead><tbody>'+rows+'<tr class="trow"><td></td><td>GRAND TOTAL</td><td class="r">PKR '+fmt(grandSales)+'</td><td class="r">PKR '+fmt(grandPaid)+'</td><td class="r" style="color:'+(grandBal>0?'red':'green')+'">PKR '+fmt(Math.abs(grandBal))+(grandBal>0?' Due':'')+'</td></tr></tbody></table></body></html>');
   w.document.close();w.focus();setTimeout(()=>{w.print();w.close()},500);
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.className='toast';setTimeout(()=>t.classList.add('hidden'),2500)}
@@ -1129,7 +1194,23 @@ function renderSummary(){
 function getPriceHistory(){try{return JSON.parse(localStorage.getItem('ls_priceHistory'))||[]}catch(e){return[]}}
 function savePriceHistory(h){try{localStorage.setItem('ls_priceHistory',JSON.stringify(h))}catch(e){}}
 
-function openPriceManager(){let html='<div class="pm-grid">';CAR_MODELS.forEach((car,i)=>{html+='<div class="pm-row"><span class="pm-name">'+car.n+'<br><span class="pm-old">Current: PKR '+fmt(car.p)+'</span></span><input type="number" id="pm-'+i+'" value="'+car.p+'" min="0" oninput="highlightPriceChange('+i+','+car.p+')"></div>'});html+='</div><div style="margin-top:14px;padding-top:12px;border-top:2px solid #eee;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-save" style="background:#e67e22" onclick="openOldPriceModal()">🔄 Update Old Entry Prices</button><button class="btn-save" style="background:#6c5ce7" onclick="openPriceHistory()">📜 Price History</button></div>';document.getElementById('priceModalBody').innerHTML=html;document.getElementById('priceModal').classList.remove('hidden')}
+function openPriceManager(){
+  let html='<div style="font-size:11px;color:#888;margin-bottom:10px">Edit prices below. Changes apply to new sales. Use the buttons at the bottom to update old entries.</div>';
+  html+='<div class="pm-grid">';
+  CAR_MODELS.forEach((car,i)=>{html+='<div class="pm-row"><span class="pm-name">'+car.n+'<br><span class="pm-old">Current: PKR '+fmt(car.p)+'</span></span><input type="number" id="pm-'+i+'" value="'+car.p+'" min="0" oninput="highlightPriceChange('+i+','+car.p+')" style="font-size:15px;font-weight:700;width:110px;padding:8px 10px"></div>'});
+  html+='</div>';
+  html+='<div style="margin-top:14px;padding-top:12px;border-top:2px solid #eee">';
+  html+='<div style="font-size:11px;font-weight:700;color:#1a1a2e;margin-bottom:8px">🔄 Apply Changed Prices to Old Sales</div>';
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
+  html+='<button class="btn-save" style="background:#e67e22" onclick="openOldPriceModal()">🎯 Update Specific Model / Date Range</button>';
+  html+='<button class="btn-save" style="background:#c0392b" onclick="applyAllCurrentPricesToAllSales()">⚡ Apply ALL Current Prices to ALL Sales</button>';
+  html+='<button class="btn-save" style="background:#6c5ce7" onclick="openPriceHistory()">📜 Price History</button>';
+  html+='</div>';
+  html+='<div style="font-size:10px;color:#e67e22;margin-top:4px">⚠️ "Apply ALL" will overwrite prices in every past sale with current prices.</div>';
+  html+='</div>';
+  document.getElementById('priceModalBody').innerHTML=html;
+  document.getElementById('priceModal').classList.remove('hidden');
+}
 function closePriceManager(){document.getElementById('priceModal').classList.add('hidden')}
 function highlightPriceChange(i,orig){const inp=document.getElementById('pm-'+i);const v=parseInt(inp.value)||0;inp.classList.toggle('pm-changed',v!==orig)}
 function savePrices(){const saved={};const changes=[];CAR_MODELS.forEach((car,i)=>{const v=parseInt(document.getElementById('pm-'+i).value)||0;if(v!==car.p)changes.push({model:car.n,from:car.p,to:v});car.p=v;saved[car.n]=v});rebuildPrices();saveCarModels();try{localStorage.setItem('ls_prices',JSON.stringify(saved))}catch(e){}if(changes.length){const history=getPriceHistory();history.push({date:new Date().toISOString(),changes});savePriceHistory(history)}closePriceManager();showToast('💰 Prices updated!'+(changes.length?' ('+changes.length+' changed)':''))}
@@ -1179,6 +1260,18 @@ function applyOldPriceUpdate(){
   savePriceHistory(history);
   save();closeOldPriceModal();closePriceManager();
   showToast('✅ Updated '+count+' entries for '+modelName+' to PKR '+fmt(np));
+}
+
+function applyAllCurrentPricesToAllSales(){
+  if(!confirm('Apply CURRENT prices to ALL past sales?\n\nThis will update every item in every sale to use today\'s prices. This cannot be undone.\n\nContinue?'))return;
+  let count=0;
+  const priceMap={};CAR_MODELS.forEach(c=>priceMap[c.n]=c.p);
+  salesLog.forEach(sale=>{sale.items.forEach(it=>{if(priceMap[it.name]!==undefined){it.price=priceMap[it.name];count++}})});
+  const history=getPriceHistory();
+  history.push({date:new Date().toISOString(),changes:[{model:'ALL MODELS',from:'various',to:'current',note:'Bulk apply current prices to all '+count+' entries'}]});
+  savePriceHistory(history);
+  save();closePriceManager();
+  showToast('✅ Applied current prices to '+count+' sale entries');
 }
 
 function exportExcel(){if(!salesLog.length)return;const rows=[];let n=1;salesLog.forEach(s=>{s.items.forEach(it=>{const p=getItemPrice(it);rows.push({'#':n++,'DATE':fmtD(s.date),'BILL NO.':s.slipNo,'BUYER':s.wholesaler,'CITY':s.city,'CAR MODEL':it.name,'UNITS SOLD':it.qty,'UNIT PRICE (PKR)':p,'TOTAL (PKR)':it.qty*p,'NOTES':''})})});const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:5},{wch:12},{wch:12},{wch:16},{wch:10},{wch:14},{wch:11},{wch:15},{wch:14},{wch:10}];XLSX.utils.book_append_sheet(wb,ws,'Sales Log Export');XLSX.writeFile(wb,'LittleStar_Sales_'+todayStr()+'.xlsx');showToast('📥 Exported!')}
@@ -1267,7 +1360,7 @@ function printMonthlyBill(){
   }).join('');
 
   const w=window.open('','_blank','width=900,height=700');
-  w.document.write('<!DOCTYPE html><html><head><title>Monthly Bill - '+who+'</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"><style>@page{size:A4 portrait;margin:10mm}*{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans",sans-serif}body{padding:10mm}.hdr{text-align:center;margin-bottom:6mm}.hdr h1{font-size:20pt;font-weight:800;letter-spacing:3px;text-transform:uppercase}.hdr .sub{font-size:9pt;color:#666;margin-top:1mm}.sep{height:2px;background:#000;margin:4mm 0}.meta{display:flex;justify-content:space-between;margin-bottom:4mm;font-size:11pt;font-weight:600}.meta b{font-weight:800}table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:4mm}th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase}td{padding:2mm 3mm;border-bottom:.5px solid #ddd;font-weight:600;vertical-align:top}tr:nth-child(even) td{background:#f8f8fc}.trow td{border-top:2px solid #000;font-weight:800;font-size:10pt;background:#e8e8f8!important}.r{text-align:right}.c{text-align:center}.summary{margin-top:4mm;padding:4mm;border:2px solid #000;border-radius:2mm;display:flex;justify-content:space-around;text-align:center}.summary .lbl{font-size:8pt;text-transform:uppercase;color:#666}.summary .val{font-size:14pt;font-weight:800}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
+  w.document.write('<!DOCTYPE html><html><head><title>Monthly Bill - '+who+'</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet"><style>@page{size:A4 portrait;margin:0}*{margin:0;padding:0;box-sizing:border-box;font-family:"DM Sans",sans-serif}body{padding:10mm}.hdr{text-align:center;margin-bottom:6mm}.hdr h1{font-size:20pt;font-weight:800;letter-spacing:3px;text-transform:uppercase}.hdr .sub{font-size:9pt;color:#666;margin-top:1mm}.sep{height:2px;background:#000;margin:4mm 0}.meta{display:flex;justify-content:space-between;margin-bottom:4mm;font-size:11pt;font-weight:600}.meta b{font-weight:800}table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:4mm}th{background:#1a1a2e;color:#fff;padding:2mm 3mm;text-align:left;font-size:8pt;text-transform:uppercase}td{padding:2mm 3mm;border-bottom:.5px solid #ddd;font-weight:600;vertical-align:top}tr:nth-child(even) td{background:#f8f8fc}.trow td{border-top:2px solid #000;font-weight:800;font-size:10pt;background:#e8e8f8!important}.r{text-align:right}.c{text-align:center}.summary{margin-top:4mm;padding:4mm;border:2px solid #000;border-radius:2mm;display:flex;justify-content:space-around;text-align:center}.summary .lbl{font-size:8pt;text-transform:uppercase;color:#666}.summary .val{font-size:14pt;font-weight:800}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+
     (ps.logo!==false?'<div style="text-align:center;margin-bottom:2mm"><img src="'+LOGO_BASE64+'" style="width:14mm;height:auto"></div>':'')+
     '<div class="hdr"><h1>Little Star</h1><div class="sub">Monthly Bill Summary</div></div><div class="sep"></div>'+
     '<div class="meta"><div><b>Buyer:</b> '+who+'</div><div><b>Month:</b> '+monthName+'</div><div><b>Total Sales:</b> '+filtered.length+'</div></div>'+
