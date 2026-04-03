@@ -547,16 +547,45 @@ rebuildPrices();
 
 // ── Default Wholesalers ──
 const DEFAULT_WHOLESALERS=[
-  {n:"Khwaja",c:"Karachi"},{n:"Naqi",c:"Karachi"},{n:"Saleem",c:"Karachi"},{n:"Mairaj",c:"Karachi"},{n:"Moosa",c:"Karachi"},{n:"Umair",c:"Karachi"},{n:"Evergreen",c:"Karachi"},{n:"Noor Alam",c:"Karachi"},{n:"Irfan",c:"Karachi"},{n:"Aslam",c:"Karachi"},{n:"Ashraf",c:"Karachi"},{n:"Rajesh",c:"Karachi"},{n:"Khaleel Cycle",c:"Karachi"},{n:"Shamshad",c:"Karachi"},{n:"Hamza Col",c:"Karachi"},{n:"PVT",c:"Karachi"},{n:"Tanzeel",c:"Karachi"},{n:"Super Cycle",c:"Karachi"},{n:"Memon Cycle",c:"Karachi"},{n:"Mudassir",c:"Karachi"},{n:"Usman Aziz",c:"Karachi"},{n:"Shandar Cycle",c:"Karachi"},{n:"Alkaswa",c:"Karachi"},
-  {n:"Faisal Digri",c:"Sindh"},{n:"Raja Bright",c:"Sindh"},{n:"Fancy Cycle",c:"Sindh"},{n:"Ghousia Digri",c:"Sindh"},
-  {n:"A1 Lahore",c:"Punjab"},{n:"Farhan Yousuf",c:"Punjab"},{n:"Fahad Lahore",c:"Punjab"},{n:"Talat Sialkot",c:"Punjab"},{n:"Pak Punjab",c:"Punjab"},{n:"Aslam Cycle",c:"Punjab"},{n:"Imran Cycle",c:"Punjab"},{n:"Abdul Hafeez",c:"Punjab"},{n:"Khurram Pindi",c:"Punjab"},{n:"Aslam Cycle 2",c:"Punjab"},{n:"Sheikhpura",c:"Punjab"},{n:"Fine Cycle",c:"Punjab"},{n:"Dilawar But",c:"Punjab"},{n:"Khurram Pindi 2",c:"Punjab"},
+  {n:"Khwaja",c:"Karachi"},{n:"Naqi",c:"Karachi"},{n:"Saleem",c:"Karachi"},{n:"Mairaj",c:"Karachi"},{n:"Moosa",c:"Karachi"},{n:"Umair",c:"Karachi"},{n:"Evergreen",c:"Karachi"},{n:"Noor Alam",c:"Karachi"},{n:"Irfan",c:"Karachi"},{n:"Aslam",c:"Karachi"},{n:"Ashraf",c:"Karachi"},{n:"Rajesh",c:"Karachi"},{n:"Khaleel Cycle",c:"Karachi"},{n:"Shamshad",c:"Karachi"},{n:"Hamza Col",c:"Karachi"},{n:"PVT",c:"Karachi"},{n:"Ajmeri Cycle",c:"Karachi"},{n:"Super Cycle",c:"Karachi"},{n:"Memon Cycle",c:"Karachi"},{n:"Mudassir",c:"Karachi"},{n:"Usman Aziz",c:"Karachi"},{n:"Shandar Cycle",c:"Karachi"},{n:"Arsalan Shakeel",c:"Karachi"},
+  {n:"Ghosia Cycle",c:"Sindh"},{n:"Ghousia Digri",c:"Sindh"},
+  {n:"A1 Lahore",c:"Punjab"},{n:"Royal Baby Cycle",c:"Punjab"},{n:"Fahad Lahore",c:"Punjab"},{n:"Talat Sialkot",c:"Punjab"},{n:"Pak Punjab",c:"Punjab"},{n:"Aslam Cycle",c:"Punjab"},{n:"Imran Cycle",c:"Punjab"},{n:"Abdul Hafeez",c:"Punjab"},{n:"Khurram Pindi",c:"Punjab"},{n:"Al Raheem Gift Centre",c:"Punjab"},{n:"Fine Cycle",c:"Punjab"},{n:"Dilawar But",c:"Punjab"},{n:"Alkaswa",c:"Punjab"},{n:"Raja Bright",c:"Punjab"},{n:"Fancy Cycle",c:"Punjab"},{n:"Ijaz Cycle",c:"Punjab"},{n:"Matloob Cycle",c:"Punjab"},{n:"Subhan Toys",c:"Punjab"},
   {n:"Quetta Khalid",c:"Balochistan"},{n:"Mudassir 2",c:"Balochistan"},
-  {n:"Umer Cycle",c:"KPK"},{n:"Ayaz Banaras",c:"KPK"},{n:"Irfan Mangora",c:"KPK"},{n:"Mardan",c:"KPK"}
+  {n:"Umer Cycle",c:"KPK"},{n:"Irfan Mangora",c:"KPK"},{n:"Javeed Cycle Mardan",c:"KPK"}
 ];
 
 // Dynamic wholesalers — load from localStorage or use defaults
 let WHOLESALERS=(function(){try{const s=localStorage.getItem('ls_wholesalers');if(s){const arr=JSON.parse(s);if(Array.isArray(arr)&&arr.length)return arr}}catch(e){}return DEFAULT_WHOLESALERS.map(w=>({...w}))})();
 function saveWholesalers(){try{localStorage.setItem('ls_wholesalers',JSON.stringify(WHOLESALERS))}catch(e){}}
+function migrateWholesalers(){
+  const renames=[
+    {from:"Tanzeel",to:"Ajmeri Cycle",c:"Karachi"},
+    {from:"Alkaswa",to:"Alkaswa",c:"Punjab"},
+    {from:"Farhan Yousuf",to:"Royal Baby Cycle",c:"Punjab"},
+    {from:"Sheikhpura",to:"Al Raheem Gift Centre",c:"Punjab"},
+    {from:"Faisal Digri",to:"Ghosia Cycle",c:"Sindh"},
+    {from:"Raja Bright",to:"Raja Bright",c:"Punjab"},
+    {from:"Fancy Cycle",to:"Fancy Cycle",c:"Punjab"},
+    {from:"Mardan",to:"Javeed Cycle Mardan",c:"KPK"},
+    {from:"Aslam Cycle 2",to:null},{from:"Khurram Pindi 2",to:null},{from:"Ayaz Banaras",to:null}
+  ];
+  const toAdd=[
+    {n:"Arsalan Shakeel",c:"Karachi"},{n:"Ijaz Cycle",c:"Punjab"},{n:"Matloob Cycle",c:"Punjab"},{n:"Subhan Toys",c:"Punjab"}
+  ];
+  let changed=false;
+  renames.forEach(r=>{
+    const idx=WHOLESALERS.findIndex(w=>w.n===r.from);
+    if(idx===-1)return;
+    if(r.to===null){WHOLESALERS.splice(idx,1);}
+    else{WHOLESALERS[idx].n=r.to;WHOLESALERS[idx].c=r.c;}
+    changed=true;
+  });
+  toAdd.forEach(a=>{
+    if(!WHOLESALERS.find(w=>w.n===a.n)){WHOLESALERS.push(a);changed=true;}
+  });
+  if(changed)saveWholesalers();
+}
+migrateWholesalers();
 
 const DB={_m:{},get(k){try{const v=localStorage.getItem('ls_'+k);return v?JSON.parse(v):null}catch(e){return this._m[k]||null}},set(k,v){try{localStorage.setItem('ls_'+k,JSON.stringify(v))}catch(e){this._m[k]=v}}};
 let salesLog=DB.get('salesLog')||[];
