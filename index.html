@@ -554,47 +554,4 @@ function printMonthlyBill(){
 }
 
 init();
-</script>
-<script>
-(function(){
-  var dfp={'Stroller':2400,'Super Tolo':1750,'Twilight':2000,'Sprinter':2750,'Swift Rider':1350,'Sparkle':1550,'Panda':1800,'Mercedese':1700,'Sunflower':1800};
-  function gp(n){try{var p=JSON.parse(localStorage.getItem('ls_prices')||'{}');return p[n]||dfp[n]||0;}catch(e){return dfp[n]||0;}}
-  var bills=[
-    {s:'0517',d:'2026-01-03',it:[['Stroller',42],['Super Tolo',42]]},
-    {s:'0518',d:'2026-01-03',it:[['Sparkle',36],['Sprinter',44]]},
-    {s:'0519',d:'2026-01-05',it:[['Panda',40],['Sunflower',20],['Super Tolo',24]]},
-    {s:'0520',d:'2026-01-09',it:[['Super Tolo',48],['Twilight',36]]},
-    {s:'0521',d:'2026-01-09',it:[['Sparkle',25],['Panda',25],['Sprinter',36]]},
-    {s:'0522',d:'2026-01-12',it:[['Stroller',48],['Super Tolo',36]]},
-    {s:'0524',d:'2026-01-15',it:[['Twilight',35],['Panda',15],['Sprinter',36]]},
-    {s:'0525',d:'2026-01-17',it:[['Mercedese',36],['Sprinter',44]]},
-    {s:'0526',d:'2026-01-17',it:[['Stroller',30],['Twilight',30],['Sparkle',24]]},
-    {s:'0527',d:'2026-01-19',it:[['Super Tolo',84]]},
-    {s:'0528',d:'2026-01-19',it:[['Stroller',42],['Twilight',42]]},
-    {s:'0529',d:'2026-01-27',it:[['Super Tolo',48],['Sprinter',36]]},
-    {s:'0530',d:'2026-01-27',it:[['Stroller',36],['Panda',24],['Swift Rider',35]]},
-    {s:'0531',d:'2026-02-02',it:[['Super Tolo',36],['Sprinter',44]]},
-    {s:'0532',d:'2026-02-03',it:[['Mercedese',30],['Sparkle',30],['Swift Rider',35]]},
-    {s:'0533',d:'2026-02-07',it:[['Super Tolo',48],['Sprinter',36]]},
-    {s:'0534',d:'2026-02-07',it:[['Stroller',48],['Twilight',36]]},
-    {s:'0535',d:'2026-02-10',it:[['Super Tolo',42],['Sparkle',42]]},
-    {s:'0536',d:'2026-02-13',it:[['Super Tolo',36],['Sprinter',44]]},
-    {s:'0537',d:'2026-02-14',it:[['Stroller',30],['Twilight',30],['Swift Rider',35]]},
-    {s:'0538',d:'2026-02-17',it:[['Stroller',48],['Super Tolo',36]]},
-    {s:'0539',d:'2026-02-18',it:[['Super Tolo',36],['Sprinter',44]]},
-    {s:'0540',d:'2026-02-19',it:[['Mercedese',36],['Stroller',48]]},
-    {s:'0541',d:'2026-02-25',it:[['Super Tolo',36],['Sprinter',44]]},
-    {s:'0542',d:'2026-02-26',it:[['Sparkle',30],['Twilight',30],['Swift Rider',35]]}
-  ];
-  var existing=new Set(salesLog.map(function(x){return x.slipNo;}));
-  var added=0;var base=Date.now();
-  bills.forEach(function(b,i){
-    if(existing.has(b.s))return;
-    var items=b.it.map(function(x){return{name:x[0],qty:x[1],price:gp(x[0])};});
-    var tu=items.reduce(function(s,x){return s+x.qty;},0);
-    salesLog.push({id:base+i,date:b.d,time:b.d+'T06:00:00.000Z',slipNo:b.s,wholesaler:'Mairaj',city:'Karachi',items:items,totalUnits:tu,withPrice:false,cashPaid:0});
-    added++;
-  });
-  if(added>0){salesLog.sort(function(a,b){return a.date.localeCompare(b.date)||((a.slipNo||'').localeCompare(b.slipNo||''));});save();console.log('Jeeva import: added '+added+' entries');}
-})();
 </script></body></html>
