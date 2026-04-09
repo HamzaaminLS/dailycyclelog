@@ -3,44 +3,47 @@
 ## Project Overview
 Single-file web app (`index.html`) for Little Star kids vehicle factory in Karachi, Pakistan.
 Used daily on a **15.6" laptop + 14" Dell Latitude 7420 in Chrome** to generate invoices, track sales logs, and manage wholesaler ledger.
-Also viewed on **phone** (read-only, real-time sync via Firebase).
+Also viewed on **phone** (read-only, real-time sync via Supabase).
 
 ## File
-- **Main file:** `index.html` (was previously `LittleStar_Daily_Sales_ver_4.html`)
+- **Main file:** `index.html`
 - **Path:** `C:/Users/USER/Desktop/daily sales/index.html`
 - **GitHub:** https://github.com/HamzaaminLS/dailycyclelog (branch: `main`)
 
 ## Database
-- **Primary:** `localStorage` — keys prefixed with `ls_` (salesLog, prices, ledger, priceHistory, etc.)
-- **Cloud:** Firebase Realtime Database — **Southeast Asia region**
-  - URL: `https://daily-sales-c55bd-default-rtdb.asia-southeast1.firebasedatabase.app`
-  - Project ID: `daily-sales-c55bd`
-  - Ref: `fbDB.ref('littlestar')`
-  - Fully configured with apiKey, appId, and measurementId
-  - **Real-time listener:** `FB_REF.on('value', ...)` — phone sees changes instantly when laptop saves
-  - Uses `lastSync` timestamp comparison (not array length) — syncs edits + deletes too
-  - `_justPushed` flag (5s) prevents listener echo after own push
-  - `_lastKnownSync` tracks last processed timestamp to detect remote changes
-  - Re-renders active view (log/summary/monthly) on incoming sync
-  - Save debounce: 1000ms (was 3000ms)
-  - ~50 entries/day — well within Firebase free (Spark) plan limits
+- **Primary:** `localStorage` — keys prefixed with `ls_`
+- **Cloud:** Supabase Realtime Database
+  - URL: `https://juaxobsfkulmhheemxwb.supabase.co`
+  - Table: `littlestar`
+  - Real-time listener via `postgres_changes` — phone sees changes instantly
+  - Emergency fallback via Supabase REST API fetch
+  - 30s auto-sync interval when offline changes pending
+  - `_dirty` flag prevents echo from own push
+  - Save debounce: 1000ms
 - **Offline auto-sync:** saves locally when offline, auto-pushes on reconnect. Green/red dot in nav.
+
+## Security
+- **PIN lock screen** on page load — PIN: `2580`
+- Stored in `sessionStorage` (`ls_auth_ok`) — must re-enter per browser session (tab close)
+- Client-side only — prevents casual access
 
 ## Key Data Structures
 
 ### Sale object
 ```js
 {
-  id: Date.now(),          // unique ID
+  id: Date.now(),
   date: "YYYY-MM-DD",
-  time: ISO string,        // full datetime for H:MM AM/PM display
-  slipNo: "0001",          // bill number (4-digit padded)
+  time: ISO string,
+  slipNo: "31",          // stored as plain number string, displayed as #31
   wholesaler: "Name",
   city: "Karachi",
-  items: [{name, qty, price}],  // price stored per-item (editable per bill)
+  items: [{name, qty, price}],
   totalUnits: number,
-  withPrice: bool,         // include prices on invoice
-  cashPaid: number
+  withPrice: bool,
+  cashPaid: number,
+  driver: string,
+  signLine: true
 }
 ```
 
@@ -51,8 +54,11 @@ Also viewed on **phone** (read-only, real-time sync via Firebase).
 | `ls_prices` | `{modelName: price}` |
 | `ls_priceHistory` | array of `{date, changes:[{model,from,to}]}` |
 | `ls_ledger` | wholesaler payment ledger |
-| `ls_billStart` | bill counter start number |
+| `ls_billStart` | global bill counter start |
+| `ls_billStartMap` | per-buyer bill start overrides |
 | `ls_pendingSync` | `'1'` if offline changes not yet synced |
+| `ls_archive_*` | yearly archived sales data |
+| `ls_printSettings` | logo/tagline toggles |
 
 ## Car Models (21 models with default prices PKR)
 Sprinter(2750), Stroller(2400), Twilight(2000), Super Tolo(1750), Swift Rider(1350), Sparkle(1550), Panda(1800), Mercedese(1700), Mic Cruiser(2850), Sunflower(1800), Rainbow(1900), 3D(1150), Classic(1500), Crystal(1700), Duckling(2000), Jaguar(1400), Jungle(1300), Mick. Mouse(2050), Mick. Rider(2200), Minion(2150), Skyjet(1550)
@@ -64,66 +70,37 @@ Sprinter(2750), Stroller(2400), Twilight(2000), Super Tolo(1750), Swift Rider(13
 - **Balochistan:** Quetta Khalid, Mudassir 2
 - **KPK:** Umer Cycle, Ayaz Banaras, Irfan Mangora, Mardan
 
-## Features Implemented
+## Features
 
 ### Invoice / Entry
-- Auto bill number (4-digit padded), resets if last bill deleted
-- Bill number reverts ONLY when the LAST/highest bill is deleted (not gaps)
-- Date + time shown as `DD/MM/YYYY • H:MM AM/PM`
+- Auto bill number, resets only when LAST bill deleted
+- 4 quick buyer buttons: Khwaja, Naqi, Mairaj, Saleem (below buyer search)
+- Two generate buttons: **✓ Generate** (preview only) | **🖨️ Generate & Print** (prints immediately)
 - A4 landscape invoice — 2 copies (Buyer + Office) side by side
-- Optional: include prices on invoice + cash paid / carry forward / return amount
-- Arrow key navigation between fields and car grid
+- Optional: include prices + cash paid / carry forward / return amount
 
 ### Sales Log
 - Filter by buyer, date range, month pills
-- Paginated (50 per page)
-- Each card shows: date+time, bill no, buyer, city, units, total PKR, item chips
-- Reprint 🖨️, Edit ✏️, Delete ✕ per card
-
-### Edit Sale Modal
-- Edit date, bill no, buyer, city, include-price checkbox, cash paid
-- **Each car model row has qty + orange price field (editable per bill)**
-- Saves item-level custom price (overrides global price)
-
-### Price Manager
-- Edit all car model prices
-- Orange highlight on changed inputs
-- **Price History** (purple button): shows all past changes with timestamps (DD/MM/YYYY HH:MM, old→new per model)
-
-### Wholesaler Ledger
-- Tracks total sales, cash paid on bills, extra payments
-- Balance calculation per wholesaler
-- Add/delete payments with notes
-- Print all balances
-
-### Settings
-- Reset bill counter start number
-- Firebase connection status
+- **Sort toggle:** ↓ Newest / ↑ Oldest
+- Paginated (50 per page) — pagination shown at **top and bottom**
+- Slip numbers shown as `#31` format
+- Reprint, Edit, Delete per card
 
 ### Export / Backup
-- Export to Excel (.xlsx)
-- JSON backup & restore
-- Firebase cloud sync (manual via sync, auto on reconnect)
+- **📥 Export** — Excel (.xlsx)
+- **📦 Backup All** — full JSON backup (nav bar, always available)
+- JSON restore from backup file (Settings)
+- Yearly archive (Settings)
 
 ## UI / Design
 - **Primary targets:** 15.6" laptop + 14" Dell Latitude 7420 (1920×1080, 125-150% scale)
-- **Responsive breakpoints:**
-  - Desktop: 4-column car grid, full nav
-  - ≤1280px (14" at 150%): 3-column grid, compact nav
-  - ≤1024px: 2-column grid, nav-right wraps to second row
-  - ≤640px (mobile): stacked fields, 2-column grid, compact everything
-- No inline max-widths — all sizing via CSS classes + media queries
-- `body{overflow-x:hidden}` prevents horizontal scroll
-- `topnav{flex-wrap:wrap}` with reduced padding/font for tighter viewports
-- `.print-wrap{overflow-x:auto}` so A4 preview scrolls inside container
 - Dark navy nav (`#1a1a2e`), white entry card, dark log background
 - Font: DM Sans (Google Fonts)
-- Sticky top nav
-- Green sync dot = online, Red = offline
+- Sticky top nav, responsive breakpoints at 1280px, 1024px, 640px
 
 ## Tech Stack
-- Pure HTML/CSS/JS — **single file, no build process**
-- Firebase 9.23.0 (compat mode via CDN)
+- Pure HTML/CSS/JS — **single file, no build process** (~560 lines)
+- Supabase JS SDK v2 (CDN)
 - XLSX.js 0.18.5 (export to Excel)
 - DM Sans font (Google Fonts CDN)
 
@@ -133,20 +110,13 @@ Remote: https://github.com/HamzaaminLS/dailycyclelog.git
 Branch: main
 User: HamzaaminLS
 ```
-To push changes:
-```bash
-cd "C:/Users/USER/Desktop/daily sales"
-git add index.html
-git commit -m "your message"
-git push
-```
+To push: `git add index.html CLAUDE.md && git commit -m "msg" && git push`
 
 ## Important Notes
-- The file is large (~860 lines), reading it in chunks using offset/limit is needed
-- Use `Grep` to find specific functions before reading/editing
-- All JS is minified/compact — functions are on single lines
-- `fmtD(dateStr)` → DD/MM/YYYY, `fmtTime(isoStr)` → H:MM AM/PM
-- `save()` handles both localStorage + Firebase sync (1s debounce)
-- `doSync()` is the direct Firebase push function
+- File is ~560 lines but each line is very long (minified) — use `Grep` to find functions, then `sed -n 'X,Yp'` to read
+- `fmtD(dateStr)` → DD/MM/YYYY, `fmtTime(isoStr)` → H:MM AM/PM, `fmtSlip(s)` → #31
+- `padSlip(n)` → plain number string (no leading zeros), `fmtSlip(s)` → `#` + parseInt
+- `save()` → localStorage + debounced Supabase sync, `doSync()` → direct Supabase push
 - Invoice print opens in new window with embedded CSS
 - **Always commit and push to git after every code change**
+- **Do NOT delete JSON/backup files without explicit permission**
